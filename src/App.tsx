@@ -37,6 +37,7 @@ function getInitialLog(date: string): DailyLog {
     notes: '',
     waterIntake: 0,
     foodEntries: [],
+    miscEntries: [],
     fatEntries: ['', ''],
     vegetableEntries: ['', ''],
     activities: [],
@@ -81,6 +82,16 @@ interface FoodEntry {
   hungerAfter: number;
 }
 
+interface MiscEntry {
+  id: string;
+  source: string;
+  time: string;
+  serving: string;
+  calories: number;
+  hungerBefore: number;
+  hungerAfter: number;
+}
+
 interface ActivityEntry {
   id: string;
   type: string;
@@ -96,6 +107,7 @@ interface DailyLog {
   notes: string;
   waterIntake: number;
   foodEntries: FoodEntry[];
+  miscEntries: MiscEntry[];
   fatEntries: string[];
   vegetableEntries: string[];
   activities: ActivityEntry[];
@@ -125,6 +137,16 @@ export default function App() {
     id: 'pending-activity',
     type: '',
     duration: '',
+  });
+
+  const [pendingMisc, setPendingMisc] = useState<MiscEntry>({
+    id: 'pending-misc',
+    source: '',
+    time: '',
+    serving: '',
+    calories: 0,
+    hungerBefore: 5,
+    hungerAfter: 5,
   });
 
   // Initial Load
@@ -277,6 +299,24 @@ export default function App() {
     }));
   };
 
+  const savePendingMisc = () => {
+    if (!pendingMisc.source) return;
+    const newEntry = {
+      ...pendingMisc,
+      id: Math.random().toString(36).substr(2, 9),
+      time: pendingMisc.time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    };
+    setLog(prev => ({ ...prev, miscEntries: [newEntry, ...(prev.miscEntries || [])] }));
+    setPendingMisc({ id: 'pending-misc', source: '', time: '', serving: '', calories: 0, hungerBefore: 5, hungerAfter: 5 });
+  };
+
+  const removeMiscEntry = (id: string) => {
+    setLog(prev => ({
+      ...prev,
+      miscEntries: (prev.miscEntries || []).filter(e => e.id !== id)
+    }));
+  };
+
   const totalCalories = log.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0);
 
   return (
@@ -387,6 +427,7 @@ export default function App() {
                 <div className="hcol-date">Date</div>
                 <div className="hcol-status">Status</div>
                 <div className="hcol-meals">Meal Intake (Time · Food · Serving · Cal · H↑H↓)</div>
+                <div className="hcol-meals">Miscellaneous (Time · Item · Serving · Cal · H↑H↓)</div>
                 <div className="hcol-notes">Notes / Activity</div>
               </div>
               {history.map((h, i) => (
@@ -426,6 +467,26 @@ export default function App() {
                             <tr key={idx}>
                               <td className="hmt-time">{formatDisplayTime(e.time)}</td>
                               <td className="hmt-source">{e.source}</td>
+                              <td className="hmt-serving">{e.serving}</td>
+                              <td className="hmt-cal">{e.calories}</td>
+                              <td className="hmt-hunger">{e.hungerBefore}→{e.hungerAfter}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                  {/* MISCELLANEOUS */}
+                  <div className="hcol-meals">
+                    {(h.miscEntries || []).length === 0 ? (
+                      <span className="hist-empty">—</span>
+                    ) : (
+                      <table className="hist-meal-table">
+                        <tbody>
+                          {(h.miscEntries || []).map((e, idx) => (
+                            <tr key={idx}>
+                              <td className="hmt-time">{formatDisplayTime(e.time)}</td>
+                              <td className="hmt-source" style={{ color: 'var(--color-purple-600, #9333ea)' }}>{e.source}</td>
                               <td className="hmt-serving">{e.serving}</td>
                               <td className="hmt-cal">{e.calories}</td>
                               <td className="hmt-hunger">{e.hungerBefore}→{e.hungerAfter}</td>
@@ -551,6 +612,63 @@ export default function App() {
                         <div className="col-hunger text-primary font-medium">{entry.hungerBefore} → {entry.hungerAfter}</div>
                         <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => removeFoodEntry(entry.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </section>
+
+            {/* ── MISCELLANEOUS ── */}
+            <section className="meal-table-container">
+              <h2 className="text-lg font-bold text-secondary flex items-center gap-2 mb-6">
+                <ClipboardList className="w-5 h-5 text-purple-500" /> Miscellaneous
+              </h2>
+              <div className="meal-table">
+                <div className="meal-row header">
+                  <div className="col-source">Source / Item</div>
+                  <div className="col-time">Time</div>
+                  <div className="col-serving">Serving</div>
+                  <div className="col-cal">Cal</div>
+                  <div className="col-hunger">Hunger (B/A)</div>
+                  <div className="col-action"></div>
+                </div>
+                <div className="meal-row pending border-2 border-purple-400/20 bg-purple-50/30">
+                  <div className="col-source">
+                    <input placeholder="What did you have?" className="table-input font-semibold" value={pendingMisc.source} onChange={e => setPendingMisc(p => ({ ...p, source: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
+                  </div>
+                  <div className="col-time">
+                    <input type="time" className="table-input" value={pendingMisc.time} onChange={e => setPendingMisc(p => ({ ...p, time: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
+                  </div>
+                  <div className="col-serving">
+                    <input placeholder="Siz..." className="table-input" value={pendingMisc.serving} onChange={e => setPendingMisc(p => ({ ...p, serving: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
+                  </div>
+                  <div className="col-cal">
+                    <input type="number" placeholder="0" className="table-input text-purple-600 font-bold" value={pendingMisc.calories || ''} onChange={e => setPendingMisc(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
+                  </div>
+                  <div className="col-hunger flex items-center gap-2">
+                    <input type="number" min="1" max="10" className="table-input w-8 text-center" value={pendingMisc.hungerBefore} onChange={e => setPendingMisc(p => ({ ...p, hungerBefore: parseInt(e.target.value) }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
+                    <span className="text-muted-foreground/30">/</span>
+                    <input type="number" min="1" max="10" className="table-input w-8 text-center" value={pendingMisc.hungerAfter} onChange={e => setPendingMisc(p => ({ ...p, hungerAfter: parseInt(e.target.value) }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
+                  </div>
+                  <div className="col-action">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={savePendingMisc} disabled={!pendingMisc.source} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", pendingMisc.source ? "bg-purple-500 text-white shadow-lg" : "bg-muted text-muted-foreground/30")}>
+                      <Plus className="w-5 h-5" />
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <AnimatePresence mode="popLayout">
+                    {(log.miscEntries || []).map((entry) => (
+                      <motion.div key={entry.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="meal-row saved group">
+                        <div className="col-source">{entry.source}</div>
+                        <div className="col-time text-muted-foreground">{formatDisplayTime(entry.time)}</div>
+                        <div className="col-serving text-muted-foreground">{entry.serving}</div>
+                        <div className="col-cal font-bold text-secondary">{entry.calories}</div>
+                        <div className="col-hunger text-purple-600 font-medium">{entry.hungerBefore} → {entry.hungerAfter}</div>
+                        <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => removeMiscEntry(entry.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </motion.div>
                     ))}
