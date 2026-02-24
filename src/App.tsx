@@ -321,96 +321,91 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-12 max-w-6xl mx-auto px-4 sm:px-8 pt-8">
-      <motion.header
+      {/* ── SINGLE CONSOLIDATED HEADER CARD ── */}
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-start mb-10"
+        className="no-print card mb-8"
+        style={{ position: 'relative', overflow: 'hidden', padding: '0.75rem 1.25rem' }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-black tracking-tighter text-secondary">
-                {view === 'today' ? 'JOURNAL' : 'HISTORY'}
-              </h1>
-              <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-                v3.0 - PERSISTENCE FIXED
-              </span>
-            </div>
+        {/* "Action Required" badge top-right */}
+        <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', color: 'white', fontSize: '0.55rem', fontWeight: 900, padding: '3px 12px', borderBottomLeftRadius: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          Action Required
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+
+          {/* Title */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }}>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--secondary)', lineHeight: 1 }}>
+              {view === 'today' ? 'JOURNAL' : 'HISTORY'}
+            </h1>
+            <span style={{ background: '#dc2626', color: 'white', fontSize: '0.5rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', alignSelf: 'flex-start' }}>
+              v3.0
+            </span>
           </div>
 
-          {/* UNDENIABLE DATE SELECTOR */}
-          <div className="no-print bg-white border-4 border-primary rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-primary text-white text-[8px] font-black px-4 py-1 rounded-bl-xl uppercase tracking-widest">
-              Action Required
-            </div>
-            <div className="flex flex-col sm:flex-row items-end gap-4">
-              <div className="flex-1 w-full space-y-2">
-                <label className="text-xs font-black uppercase text-secondary/60 tracking-widest flex items-center gap-2 ml-2">
-                  <Calendar className="w-4 h-4 text-primary" /> 1. Select Date to View/Edit
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => {
-                    console.log("CRITICAL: Date changed to", e.target.value);
-                    setSelectedDate(e.target.value);
-                    setView('today');
-                  }}
-                  className="w-full bg-muted border-2 border-primary/10 rounded-2xl px-6 py-4 text-xl font-bold text-secondary focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all cursor-pointer shadow-inner"
-                />
-              </div>
-              <button
-                onClick={() => {
-                  const today = getLocalDateString();
-                  setSelectedDate(today);
-                  setView('today');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto px-8 py-4 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest hover:bg-secondary/90 transition-all shadow-lg active:scale-95"
-              >
-                Reset to Today
-              </button>
-            </div>
+          {/* Divider */}
+          <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch', flexShrink: 0 }} />
+
+          {/* Date label + picker */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: '160px' }}>
+            <label style={{ fontSize: '0.55rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Calendar style={{ width: '0.7rem', height: '0.7rem', color: 'var(--primary)' }} /> Select Date to View / Edit
+            </label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setView('today');
+              }}
+              style={{ background: 'var(--muted)', border: '1.5px solid var(--border)', borderRadius: '0.75rem', padding: '0.35rem 0.75rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', cursor: 'pointer', outline: 'none', width: '100%' }}
+            />
             {selectedDate !== getLocalDateString() && (
-              <div className="mt-4 flex items-center gap-2 text-red-600 font-black text-xs bg-red-50 p-3 rounded-xl border border-red-100 italic">
-                <Zap className="w-4 h-4 animate-bounce" />
-                Note: You are editing data for {formatDisplayDate(selectedDate)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#dc2626', fontSize: '0.55rem', fontWeight: 700, fontStyle: 'italic' }}>
+                <Zap style={{ width: '0.6rem', height: '0.6rem' }} />
+                Editing: {formatDisplayDate(selectedDate)}
               </div>
             )}
           </div>
-        </div>
-        <div className="flex gap-3 no-print">
-          <div className="flex bg-muted/30 p-1 rounded-2xl border border-border/20 mr-2">
+
+          {/* Reset to Today */}
+          <button
+            onClick={() => { setSelectedDate(getLocalDateString()); setView('today'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            style={{ padding: '0.45rem 1rem', background: 'var(--secondary)', color: 'white', borderRadius: '0.75rem', fontWeight: 900, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            Reset to Today
+          </button>
+
+          {/* Divider */}
+          <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch', flexShrink: 0 }} />
+
+          {/* Journal / History tabs */}
+          <div style={{ display: 'flex', background: 'var(--muted)', padding: '3px', borderRadius: '0.75rem', border: '1px solid var(--border)', flexShrink: 0 }}>
             <button
               onClick={() => setView('today')}
-              className={cn(
-                "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                view === 'today' ? "bg-white text-secondary shadow-sm" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              Journal
-            </button>
+              style={{ padding: '0.35rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: view === 'today' ? 'white' : 'transparent', color: view === 'today' ? 'var(--secondary)' : 'var(--muted-foreground)', boxShadow: view === 'today' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}
+            >Journal</button>
             <button
               onClick={() => setView('history')}
-              className={cn(
-                "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                view === 'history' ? "bg-white text-secondary shadow-sm" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              All History
-            </button>
+              style={{ padding: '0.35rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: view === 'history' ? 'white' : 'transparent', color: view === 'history' ? 'var(--secondary)' : 'var(--muted-foreground)', boxShadow: view === 'history' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}
+            >History</button>
           </div>
+
+          {/* Print */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => window.print()}
-            className="w-12 h-12 glass rounded-2xl flex items-center justify-center ring-1 ring-border shadow-sm cursor-pointer"
+            style={{ width: '2.2rem', height: '2.2rem', borderRadius: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer', flexShrink: 0 }}
             title="Print Journal"
           >
-            <Printer className="w-5 h-5 text-primary" />
+            <Printer style={{ width: '1rem', height: '1rem', color: 'var(--primary)' }} />
           </motion.button>
+
         </div>
-      </motion.header>
+      </motion.div>
 
       {view === 'history' ? (
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -514,51 +509,83 @@ export default function App() {
         </section>
       ) : (
         <>
-          <section className="grid grid-cols-2 gap-4 mb-8">
-            <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col justify-between h-32">
-              <div>
-                <span className="badge bg-primary/10 text-primary mb-1">Target</span>
-                <input
-                  className="w-full text-2xl font-bold bg-transparent border-none p-0 focus:ring-0 text-secondary placeholder:text-muted-foreground/30"
-                  placeholder="Set Goal"
-                  value={log.proteinGoal}
-                  onChange={e => setLog(prev => ({ ...prev, proteinGoal: e.target.value }))}
-                />
+          <section className="mb-8">
+            {/* Single full-width card: Goal | Cals | Guide */}
+            <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden" style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: '1.25rem' }}>
+              {/* Left: Protein Goal + Cals Consumed stacked */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0, minWidth: '9rem' }}>
+                {/* Protein Goal */}
+                <div>
+                  <span className="badge bg-primary/10 text-primary">Target</span>
+                  <input
+                    style={{ fontSize: '1.4rem', fontWeight: 700, background: 'transparent', border: 'none', padding: 0, outline: 'none', width: '100%', display: 'block', marginTop: '2px' }}
+                    className="text-secondary placeholder:text-muted-foreground/30"
+                    placeholder="Set Goal"
+                    value={log.proteinGoal}
+                    onChange={e => setLog(prev => ({ ...prev, proteinGoal: e.target.value }))}
+                  />
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Protein Goal</p>
+                </div>
+                {/* Cals Consumed */}
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.3rem' }}>
+                  <span className="badge bg-orange-500/10 text-orange-600" style={{ fontSize: '0.55rem' }}>Total</span>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1 }}>{totalCalories}</div>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Cals Consumed</p>
+                </div>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Protein Goal</p>
+              {/* Vertical Divider */}
+              <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch', flexShrink: 0 }} />
+              {/* Right: Guide */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.4rem' }}>Protein Calories Guide</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '0.75rem', rowGap: '0.15rem' }}>
+                  {([
+                    ['VLP', '35cal · 7g Pro · 0-1g Fat'],
+                    ['LP', '55cal · 7g Pro · 3g Fat'],
+                    ['MP', '75cal · 7g Pro · 5g Fat'],
+                    ['NSV', '25cal · 5g carb'],
+                    ['Fruits', '60cal · 15g carb'],
+                    ['Fats', '45cal · 5g Fat'],
+                    ['Misc', '0-20cal'],
+                  ] as [string, string][]).map(([label, val]) => (
+                    <div key={label} style={{ display: 'flex', gap: '0.25rem', alignItems: 'baseline' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--secondary)', whiteSpace: 'nowrap' }}>{label}</span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <Scale className="absolute -bottom-4 -right-4 w-20 h-20 text-primary opacity-[0.03] rotate-12" />
-            </motion.div>
-
-            <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col justify-between h-32">
-              <div>
-                <span className="badge bg-orange-500/10 text-orange-600 mb-1">Total</span>
-                <div className="text-2xl font-bold text-secondary">{totalCalories}</div>
-              </div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Cals Consumed</p>
-              <Flame className="absolute -bottom-4 -right-4 w-20 h-20 text-orange-500 opacity-[0.03] rotate-12" />
+              <Flame className="absolute -bottom-4 -left-4 w-16 h-16 text-orange-500 opacity-[0.03] rotate-12" />
             </motion.div>
           </section>
 
           <section className="space-y-3 mb-10">
-            <div className="flex items-center justify-between p-4 glass border border-border/50 rounded-[2rem] shadow-sm">
-              <div className="flex items-center gap-3 pl-2">
-                <Zap className={cn("w-5 h-5", log.ketosis ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30")} />
-                <span className="text-[10px] sm:text-xs uppercase font-black tracking-[0.2em] text-secondary">Ketosis Check</span>
+            {/* Keto + On Track side-by-side in one card */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.5rem', padding: '1rem 1.5rem' }}>
+              {/* Left: Ketosis Check */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Zap className={cn('w-4 h-4', log.ketosis ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30')} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--secondary)' }}>Ketosis Check</span>
+                </div>
+                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '3px', border: '1px solid var(--border)' }}>
+                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: true }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.ketosis ? 'var(--secondary)' : 'transparent', color: log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
+                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: false }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.ketosis ? '#ef4444' : 'transparent', color: !log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
+                </div>
               </div>
-              <div className="flex items-center bg-muted/30 p-1 rounded-2xl border border-border/20">
-                <button onClick={() => setLog(prev => ({ ...prev, ketosis: true }))} className={cn("px-10 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", log.ketosis ? "bg-secondary text-white shadow-lg" : "text-muted-foreground hover:bg-muted")}>Yes</button>
-                <button onClick={() => setLog(prev => ({ ...prev, ketosis: false }))} className={cn("px-10 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", !log.ketosis ? "bg-red-500 text-white shadow-lg" : "text-muted-foreground hover:bg-muted")}>No</button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 glass border border-border/50 rounded-[2rem] shadow-sm">
-              <div className="flex items-center gap-3 pl-2">
-                <CheckCircle2 className={cn("w-5 h-5", log.followedPlan ? "text-primary" : "text-muted-foreground/30")} />
-                <span className="text-[10px] sm:text-xs uppercase font-black tracking-[0.2em] text-secondary">Stayed On Track</span>
-              </div>
-              <div className="flex items-center bg-muted/30 p-1 rounded-2xl border border-border/20">
-                <button onClick={() => setLog(prev => ({ ...prev, followedPlan: true }))} className={cn("px-10 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", log.followedPlan ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:bg-muted")}>Yes</button>
-                <button onClick={() => setLog(prev => ({ ...prev, followedPlan: false }))} className={cn("px-10 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", !log.followedPlan ? "bg-red-500 text-white shadow-lg" : "text-muted-foreground hover:bg-muted")}>No</button>
+              {/* Vertical Divider */}
+              <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch', flexShrink: 0 }} />
+              {/* Right: Stayed On Track */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 className={cn('w-4 h-4', log.followedPlan ? 'text-primary' : 'text-muted-foreground/30')} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--secondary)' }}>Stayed On Track</span>
+                </div>
+                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '3px', border: '1px solid var(--border)' }}>
+                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: true }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.followedPlan ? 'var(--primary)' : 'transparent', color: log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
+                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: false }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.followedPlan ? '#ef4444' : 'transparent', color: !log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
+                </div>
               </div>
             </div>
           </section>
