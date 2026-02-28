@@ -36,6 +36,10 @@ function getInitialLog(date: string): DailyLog {
     followedPlan: false,
     notes: '',
     waterIntake: 0,
+    fatIntake: 0,
+    miscIntake: 0,
+    vegIntake: 0,
+    fruitIntake: 0,
     foodEntries: [],
     miscEntries: [],
     fatEntries: ['', ''],
@@ -106,6 +110,10 @@ interface DailyLog {
   followedPlan: boolean;
   notes: string;
   waterIntake: number;
+  fatIntake?: number;
+  miscIntake?: number;
+  vegIntake?: number;
+  fruitIntake?: number;
   foodEntries: FoodEntry[];
   miscEntries: MiscEntry[];
   fatEntries: string[];
@@ -137,16 +145,6 @@ export default function App() {
     id: 'pending-activity',
     type: '',
     duration: '',
-  });
-
-  const [pendingMisc, setPendingMisc] = useState<MiscEntry>({
-    id: 'pending-misc',
-    source: '',
-    time: '',
-    serving: '',
-    calories: 0,
-    hungerBefore: 5,
-    hungerAfter: 5,
   });
 
   // Initial Load
@@ -299,24 +297,6 @@ export default function App() {
     }));
   };
 
-  const savePendingMisc = () => {
-    if (!pendingMisc.source) return;
-    const newEntry = {
-      ...pendingMisc,
-      id: Math.random().toString(36).substr(2, 9),
-      time: pendingMisc.time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    };
-    setLog(prev => ({ ...prev, miscEntries: [newEntry, ...(prev.miscEntries || [])] }));
-    setPendingMisc({ id: 'pending-misc', source: '', time: '', serving: '', calories: 0, hungerBefore: 5, hungerAfter: 5 });
-  };
-
-  const removeMiscEntry = (id: string) => {
-    setLog(prev => ({
-      ...prev,
-      miscEntries: (prev.miscEntries || []).filter(e => e.id !== id)
-    }));
-  };
-
   const totalCalories = log.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0);
 
   return (
@@ -422,7 +402,7 @@ export default function App() {
                 <div className="hcol-date">Date</div>
                 <div className="hcol-status">Status</div>
                 <div className="hcol-meals">Meal Intake (Time · Food · Serving · Cal · H↑H↓)</div>
-                <div className="hcol-meals">Miscellaneous (Time · Item · Serving · Cal · H↑H↓)</div>
+                <div className="hcol-meals">Extras (Fat · Misc · Veg · Fruit)</div>
                 <div className="hcol-notes">Notes / Activity</div>
               </div>
               {history.map((h, i) => (
@@ -471,11 +451,59 @@ export default function App() {
                       </table>
                     )}
                   </div>
-                  {/* MISCELLANEOUS */}
-                  <div className="hcol-meals">
-                    {(h.miscEntries || []).length === 0 ? (
-                      <span className="hist-empty">—</span>
-                    ) : (
+                  {/* EXTRAS */}
+                  <div className="hcol-meals" style={{ gap: '0.75rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                      {/* Fat Checkboxes */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
+                          <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FAT
+                        </div>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[...Array(2)].map((_, idx) => (
+                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #f59e0b', background: idx < (h.fatIntake || 0) ? '#f59e0b' : 'transparent' }} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Misc Checkboxes */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#a855f7' }}>
+                          <ClipboardList style={{ width: '0.7rem', height: '0.7rem' }} /> MISC
+                        </div>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[...Array(4)].map((_, idx) => (
+                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #a855f7', background: idx < (h.miscIntake || 0) ? '#a855f7' : 'transparent' }} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Veg Checkboxes */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
+                          <Scale style={{ width: '0.7rem', height: '0.7rem' }} /> VEG
+                        </div>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[...Array(2)].map((_, idx) => (
+                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #22c55e', background: idx < (h.vegIntake || 0) ? '#22c55e' : 'transparent' }} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Fruit Checkboxes */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444' }}>
+                          <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FRUITS
+                        </div>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[...Array(2)].map((_, idx) => (
+                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #ef4444', background: idx < (h.fruitIntake || 0) ? '#ef4444' : 'transparent' }} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Legacy Misc Entries */}
+                    {(h.miscEntries || []).length > 0 && (
                       <table className="hist-meal-table">
                         <tbody>
                           {(h.miscEntries || []).map((e, idx) => (
@@ -562,38 +590,38 @@ export default function App() {
 
           <section className="space-y-3 mb-10">
             {/* Keto + On Track side-by-side in one card */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.5rem', padding: '1rem 1.5rem' }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.25rem', padding: '0.75rem 1.25rem' }}>
               {/* Left: Ketosis Check */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Zap className={cn('w-4 h-4', log.ketosis ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30')} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Zap className={cn('w-3.5 h-3.5', log.ketosis ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30')} />
                   <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--secondary)' }}>Ketosis Check</span>
                 </div>
-                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '3px', border: '1px solid var(--border)' }}>
-                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: true }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.ketosis ? 'var(--secondary)' : 'transparent', color: log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
-                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: false }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.ketosis ? '#ef4444' : 'transparent', color: !log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
+                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '2px', border: '1px solid var(--border)' }}>
+                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: true }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.ketosis ? 'var(--secondary)' : 'transparent', color: log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
+                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: false }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.ketosis ? '#ef4444' : 'transparent', color: !log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
                 </div>
               </div>
               {/* Vertical Divider */}
               <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch', flexShrink: 0 }} />
               {/* Right: Stayed On Track */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <CheckCircle2 className={cn('w-4 h-4', log.followedPlan ? 'text-primary' : 'text-muted-foreground/30')} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <CheckCircle2 className={cn('w-3.5 h-3.5', log.followedPlan ? 'text-primary' : 'text-muted-foreground/30')} />
                   <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--secondary)' }}>Stayed On Track</span>
                 </div>
-                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '3px', border: '1px solid var(--border)' }}>
-                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: true }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.followedPlan ? 'var(--primary)' : 'transparent', color: log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
-                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: false }))} style={{ flex: 1, padding: '0.4rem 0.75rem', borderRadius: '0.75rem', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.followedPlan ? '#ef4444' : 'transparent', color: !log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
+                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '2px', border: '1px solid var(--border)' }}>
+                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: true }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.followedPlan ? 'var(--primary)' : 'transparent', color: log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
+                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: false }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.followedPlan ? '#ef4444' : 'transparent', color: !log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
                 </div>
               </div>
             </div>
           </section>
 
-          <div className="space-y-12">
-            <section className="meal-table-container">
-              <h2 className="text-lg font-bold text-secondary flex items-center gap-2 mb-6">
-                <ClipboardList className="w-5 h-5 text-primary" /> Meal Intake
+          <div className="space-y-4">
+            <section className="card meal-table-container" style={{ padding: '0.75rem 1.25rem' }}>
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '0.5rem' }}>
+                <ClipboardList style={{ width: '0.9rem', height: '0.9rem', color: 'var(--primary)' }} /> Meal Intake
               </h2>
               <div className="meal-table">
                 <div className="meal-row header">
@@ -647,82 +675,133 @@ export default function App() {
               </div>
             </section>
 
-            {/* ── MISCELLANEOUS ── */}
-            <section className="meal-table-container">
-              <h2 className="text-lg font-bold text-secondary flex items-center gap-2 mb-6">
-                <ClipboardList className="w-5 h-5 text-purple-500" /> Miscellaneous
-              </h2>
-              <div className="meal-table">
-                <div className="meal-row header">
-                  <div className="col-source">Source / Item</div>
-                  <div className="col-time">Time</div>
-                  <div className="col-serving">Serving</div>
-                  <div className="col-cal">Cal</div>
-                  <div className="col-hunger">Hunger (B/A)</div>
-                  <div className="col-action"></div>
-                </div>
-                <div className="meal-row pending border-2 border-purple-400/20 bg-purple-50/30">
-                  <div className="col-source">
-                    <input placeholder="What did you have?" className="table-input font-semibold" value={pendingMisc.source} onChange={e => setPendingMisc(p => ({ ...p, source: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
-                  </div>
-                  <div className="col-time">
-                    <input type="time" className="table-input" value={pendingMisc.time} onChange={e => setPendingMisc(p => ({ ...p, time: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
-                  </div>
-                  <div className="col-serving">
-                    <input placeholder="Siz..." className="table-input" value={pendingMisc.serving} onChange={e => setPendingMisc(p => ({ ...p, serving: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
-                  </div>
-                  <div className="col-cal">
-                    <input type="number" placeholder="0" className="table-input text-purple-600 font-bold" value={pendingMisc.calories || ''} onChange={e => setPendingMisc(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
-                  </div>
-                  <div className="col-hunger flex items-center gap-2">
-                    <input type="number" min="1" max="10" className="table-input w-8 text-center" value={pendingMisc.hungerBefore} onChange={e => setPendingMisc(p => ({ ...p, hungerBefore: parseInt(e.target.value) }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
-                    <span className="text-muted-foreground/30">/</span>
-                    <input type="number" min="1" max="10" className="table-input w-8 text-center" value={pendingMisc.hungerAfter} onChange={e => setPendingMisc(p => ({ ...p, hungerAfter: parseInt(e.target.value) }))} onKeyDown={e => e.key === 'Enter' && savePendingMisc()} />
-                  </div>
-                  <div className="col-action">
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={savePendingMisc} disabled={!pendingMisc.source} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", pendingMisc.source ? "bg-purple-500 text-white shadow-lg" : "bg-muted text-muted-foreground/30")}>
-                      <Plus className="w-5 h-5" />
-                    </motion.button>
-                  </div>
-                </div>
-                <div className="space-y-2 mt-4">
-                  <AnimatePresence mode="popLayout">
-                    {(log.miscEntries || []).map((entry) => (
-                      <motion.div key={entry.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="meal-row saved group">
-                        <div className="col-source">{entry.source}</div>
-                        <div className="col-time text-muted-foreground">{formatDisplayTime(entry.time)}</div>
-                        <div className="col-serving text-muted-foreground">{entry.serving}</div>
-                        <div className="col-cal font-bold text-secondary">{entry.calories}</div>
-                        <div className="col-hunger text-purple-600 font-medium">{entry.hungerBefore} → {entry.hungerAfter}</div>
-                        <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => removeMiscEntry(entry.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
-            </section>
-
-            <section className="card">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-secondary flex items-center gap-2">
-                  <Droplets className="w-5 h-5 text-blue-500" /> Hydration
+            {/* ── NEW HORIZONTAL EXTRAS (FAT, MISC, VEG) ── */}
+            <section className="card" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', padding: '0.75rem 1.25rem', flexWrap: 'wrap' }}>
+              {/* Fat */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#f59e0b' }} /> Fat
                 </h2>
-                <div className="badge bg-blue-500/10 text-blue-600 lowercase font-black">{log.waterIntake} of 8 glasses</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {[...Array(2)].map((_, i) => (
+                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.fatIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, fatIntake: i + 1 === (prev.fatIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#f59e0b', cursor: 'pointer' }}
+                      />
+                    </label>
+                  ))}
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f59e0b', marginLeft: '0.2rem' }}>
+                    {(log.fatIntake || 0)} / 2
+                  </span>
+                </div>
               </div>
-              <div className="water-container">
-                {[...Array(8)].map((_, i) => (
-                  <motion.button key={i} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setLog(prev => ({ ...prev, waterIntake: i + 1 === log.waterIntake ? i : i + 1 }))} className={cn("water-drop", i < log.waterIntake && "filled")}>
-                    <Droplets className="w-5 h-5" />
-                  </motion.button>
-                ))}
+
+              {/* Divider */}
+              <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch' }} />
+
+              {/* Misc */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <ClipboardList style={{ width: '0.8rem', height: '0.8rem', color: '#a855f7' }} /> Misc
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {[...Array(4)].map((_, i) => (
+                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.miscIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, miscIntake: i + 1 === (prev.miscIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#a855f7', cursor: 'pointer' }}
+                      />
+                    </label>
+                  ))}
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#a855f7', marginLeft: '0.2rem' }}>
+                    {(log.miscIntake || 0)} / 4
+                  </span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch' }} />
+
+              {/* Vegetable */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Scale style={{ width: '0.8rem', height: '0.8rem', color: '#22c55e' }} /> Vegetables
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {[...Array(2)].map((_, i) => (
+                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.vegIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, vegIntake: i + 1 === (prev.vegIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#22c55e', cursor: 'pointer' }}
+                      />
+                    </label>
+                  ))}
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#22c55e', marginLeft: '0.2rem' }}>
+                    {(log.vegIntake || 0)} / 2
+                  </span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch' }} />
+
+              {/* Fruits */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#ef4444' }} /> Fruits
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {[...Array(2)].map((_, i) => (
+                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.fruitIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, fruitIntake: i + 1 === (prev.fruitIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#ef4444', cursor: 'pointer' }}
+                      />
+                    </label>
+                  ))}
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ef4444', marginLeft: '0.2rem' }}>
+                    {(log.fruitIntake || 0)} / 2
+                  </span>
+                </div>
               </div>
             </section>
 
-            <section className="meal-table-container">
-              <h2 className="text-lg font-bold text-secondary flex items-center gap-2 mb-6">
-                <Activity className="w-5 h-5 text-primary" /> Activity Log
+            <section className="card" style={{ padding: '0.75rem 1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Droplets style={{ width: '0.9rem', height: '0.9rem', color: '#3b82f6' }} /> Hydration
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {[...Array(8)].map((_, i) => (
+                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < log.waterIntake}
+                        onChange={() => setLog(prev => ({ ...prev, waterIntake: i + 1 === log.waterIntake ? i : i + 1 }))}
+                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#3b82f6', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '0.45rem', color: 'var(--muted-foreground)', fontWeight: 700 }}>{i + 1}</span>
+                    </label>
+                  ))}
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#3b82f6', marginLeft: '0.5rem', whiteSpace: 'nowrap' }}>
+                    {log.waterIntake} / 8
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <section className="card meal-table-container" style={{ padding: '0.75rem 1.25rem' }}>
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '0.5rem' }}>
+                <Activity style={{ width: '0.9rem', height: '0.9rem', color: 'var(--primary)' }} /> Activity Log
               </h2>
               <div className="meal-table">
                 <div className="meal-row header">
@@ -759,12 +838,12 @@ export default function App() {
               </div>
             </section>
 
-            <section>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-secondary">Reflection</h2>
-                <div className="text-[10px] font-black uppercase text-muted-foreground">Self-Check</div>
+            <section className="card" style={{ padding: '0.75rem 1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>Reflection</h2>
+                <div style={{ fontSize: '0.55rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--muted-foreground)', letterSpacing: '0.1em' }}>Self-Check</div>
               </div>
-              <textarea placeholder="Notes on energy, sleep, or mood..." className="input min-h-[120px] rounded-[2rem] bg-card border-border/50 text-secondary p-6 shadow-inner" value={log.notes} onChange={e => setLog(prev => ({ ...prev, notes: e.target.value }))} />
+              <textarea placeholder="Notes on energy, sleep, or mood..." className="input bg-card border-border/50 text-secondary shadow-inner" style={{ minHeight: '80px', borderRadius: '0.75rem', padding: '0.5rem 0.75rem', fontSize: '0.8rem' }} value={log.notes} onChange={e => setLog(prev => ({ ...prev, notes: e.target.value }))} />
             </section>
           </div>
         </>

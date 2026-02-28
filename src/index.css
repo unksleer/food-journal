@@ -345,8 +345,8 @@ body {
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 6px;
+  padding: 4px 0;
   border-bottom: 1px solid var(--border);
   width: 100% !important;
 }
@@ -400,15 +400,15 @@ body {
 
 .meal-row.pending {
   background: var(--muted);
-  margin: 6px 0;
-  padding: 10px;
-  border-radius: 12px;
+  margin: 4px 0;
+  padding: 6px 8px;
+  border-radius: 10px;
   border: 1px solid var(--primary);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
 }
 
 .meal-row.saved {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   transition: all 0.2s ease;
 }
 
@@ -421,9 +421,9 @@ body {
   width: 100%;
   background: transparent;
   border: none;
-  padding: 2px 0;
+  padding: 1px 0;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--foreground);
   outline: none;
 }
