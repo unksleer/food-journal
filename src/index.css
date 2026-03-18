@@ -287,35 +287,6 @@ body {
   color: white;
 }
 
-.hunger-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 10px;
-  outline: none;
-  margin: 15px 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .hunger-slider {
-    background: #1e293b;
-  }
-}
-
-.hunger-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  background: var(--primary);
-  border: 4px solid white;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: background 0.3s ease;
-}
 
 
 .badge {
@@ -372,10 +343,6 @@ body {
   flex: 0.5 !important;
 }
 
-.col-hunger {
-  flex: 1 !important;
-}
-
 .col-action {
   flex: 0 0 40px !important;
 }
@@ -430,10 +397,6 @@ body {
 
 .table-input:focus {
   border-bottom: 1.5px solid var(--primary);
-}
-
-.col-hunger {
-  white-space: nowrap;
 }
 
 .col-action {
@@ -615,13 +578,6 @@ body {
   color: var(--primary);
   width: 40px;
   text-align: right;
-}
-
-.hmt-hunger {
-  color: var(--muted-foreground);
-  width: 40px;
-  text-align: right;
-  white-space: nowrap;
 }
 
 .hist-empty {

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Droplets,
   Activity,
-  CheckCircle2,
   Plus,
   Trash2,
   ClipboardList,
@@ -15,6 +14,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Capacitor } from '@capacitor/core';
+import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -41,9 +42,12 @@ function getInitialLog(date: string): DailyLog {
     vegIntake: 0,
     fruitIntake: 0,
     foodEntries: [],
+    carbEntries: [],
     miscEntries: [],
+    miscStringEntries: ['', '', '', ''],
     fatEntries: ['', ''],
     vegetableEntries: ['', ''],
+    fruitEntries: ['', ''],
     activities: [],
     supplements: [],
   };
@@ -86,6 +90,14 @@ interface FoodEntry {
   hungerAfter: number;
 }
 
+interface CarbEntry {
+  id: string;
+  source: string;
+  time: string;
+  serving: string;
+  netCarbs: number;
+}
+
 interface MiscEntry {
   id: string;
   source: string;
@@ -115,9 +127,12 @@ interface DailyLog {
   vegIntake?: number;
   fruitIntake?: number;
   foodEntries: FoodEntry[];
+  carbEntries: CarbEntry[];
   miscEntries: MiscEntry[];
+  miscStringEntries: string[];
   fatEntries: string[];
   vegetableEntries: string[];
+  fruitEntries: string[];
   activities: ActivityEntry[];
   supplements?: any[];
 }
@@ -141,6 +156,14 @@ export default function App() {
     hungerAfter: 5,
   });
 
+  const [pendingCarbEntry, setPendingCarbEntry] = useState<CarbEntry>({
+    id: 'pending-carb',
+    source: '',
+    time: '',
+    serving: '',
+    netCarbs: 0,
+  });
+
   const [pendingActivity, setPendingActivity] = useState<ActivityEntry>({
     id: 'pending-activity',
     type: '',
@@ -149,10 +172,10 @@ export default function App() {
 
   // Initial Load
   useEffect(() => {
-    console.log("App: Initializing v3.0...");
+    console.log("App: Initializing v3.1...");
     // Force alert to confirm update
     setTimeout(() => {
-      if (window.confirm("Food Journal Updated to v3.0. Click OK to refresh cache if you don't see the new date picker.")) {
+      if (window.confirm("Food Journal Updated to v3.1 (Carb Tracking). Click OK to refresh cache if needed.")) {
         // Some basic cache busting
       }
     }, 1000);
@@ -280,6 +303,30 @@ export default function App() {
     }));
   };
 
+  const savePendingCarbEntry = () => {
+    if (!pendingCarbEntry.source) return;
+    const newEntry = {
+      ...pendingCarbEntry,
+      id: Math.random().toString(36).substr(2, 9),
+      time: pendingCarbEntry.time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    };
+    setLog(prev => ({ ...prev, carbEntries: [newEntry, ...(prev.carbEntries || [])] }));
+    setPendingCarbEntry({
+      id: 'pending-carb',
+      source: '',
+      time: '',
+      serving: '',
+      netCarbs: 0,
+    });
+  };
+
+  const removeCarbEntry = (id: string) => {
+    setLog(prev => ({
+      ...prev,
+      carbEntries: (prev.carbEntries || []).filter(e => e.id !== id)
+    }));
+  };
+
   const savePendingActivity = () => {
     if (!pendingActivity.type) return;
     const newEntry = {
@@ -318,7 +365,7 @@ export default function App() {
           {/* Title */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }}>
             <h1 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--secondary)', lineHeight: 1 }}>
-              {view === 'today' ? 'JOURNAL' : 'HISTORY'}
+              {view === 'today' ? 'FUEL TRACKER' : 'HISTORY'}
             </h1>
             <span style={{ background: '#dc2626', color: 'white', fontSize: '0.5rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', alignSelf: 'flex-start' }}>
               v3.0
@@ -377,7 +424,17 @@ export default function App() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => window.print()}
+            onClick={async () => {
+              if (Capacitor.isNativePlatform()) {
+                try {
+                  await CapPrinter.printWebView();
+                } catch (e) {
+                  console.error('Print failed', e);
+                }
+              } else {
+                window.print();
+              }
+            }}
             style={{ width: '2.2rem', height: '2.2rem', borderRadius: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer', flexShrink: 0 }}
             title="Print Journal"
           >
@@ -401,7 +458,7 @@ export default function App() {
               <div className="history-col-header">
                 <div className="hcol-date">Date</div>
                 <div className="hcol-status">Status</div>
-                <div className="hcol-meals">Meal Intake (Time · Food · Serving · Cal · H↑H↓)</div>
+                <div className="hcol-meals">Meal Intake & Carbs (Time · Food · Serving · Cal/Carbs)</div>
                 <div className="hcol-meals">Extras (Fat · Misc · Veg · Fruit)</div>
                 <div className="hcol-notes">Notes / Activity</div>
               </div>
@@ -418,13 +475,10 @@ export default function App() {
                   </div>
                   {/* STATUS */}
                   <div className="hcol-status">
-                    <span className={cn("hist-badge", h.ketosis ? "keto" : "no-keto")}>
-                      {h.ketosis ? 'Keto' : 'No Keto'}
-                    </span>
-                    <span className={cn("hist-badge", h.followedPlan ? "on-track" : "off-track")}>
-                      {h.followedPlan ? 'On Track' : 'Off'}
-                    </span>
-                    <div className="hist-cal">{h.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0)} kcal</div>
+                    <div className="hist-cal">
+                      {h.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0)} kcal
+                      {(h.carbEntries || []).length > 0 && <span style={{ color: '#22c55e', fontSize: '0.85em', marginLeft: '4px' }}>/ {(h.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)}g net</span>}
+                    </div>
                     <div className="hist-water">
                       {[...Array(8)].map((_, idx) => (
                         <div key={idx} className={idx < h.waterIntake ? "water-pip filled" : "water-pip"} />
@@ -433,73 +487,97 @@ export default function App() {
                   </div>
                   {/* MEALS */}
                   <div className="hcol-meals">
-                    {h.foodEntries.length === 0 ? (
-                      <span className="hist-empty">—</span>
-                    ) : (
-                      <table className="hist-meal-table">
-                        <tbody>
-                          {h.foodEntries.map((e, idx) => (
-                            <tr key={idx}>
-                              <td className="hmt-time">{formatDisplayTime(e.time)}</td>
-                              <td className="hmt-source">{e.source}</td>
-                              <td className="hmt-serving">{e.serving}</td>
-                              <td className="hmt-cal">{e.calories}</td>
-                              <td className="hmt-hunger">{e.hungerBefore}→{e.hungerAfter}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {h.foodEntries.length === 0 ? (
+                        <span className="hist-empty">—</span>
+                      ) : (
+                        <table className="hist-meal-table">
+                          <tbody>
+                            {h.foodEntries.map((e, idx) => (
+                              <tr key={`food-${idx}`}>
+                                <td className="hmt-time">{formatDisplayTime(e.time)}</td>
+                                <td className="hmt-source">{e.source}</td>
+                                <td className="hmt-serving">{e.serving}</td>
+                                <td className="hmt-cal">{e.calories}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+
+                      {/* CARB HISTORY */}
+                      {(h.carbEntries || []).length > 0 && (
+                        <div style={{ marginTop: '0.2rem', paddingTop: '0.4rem', borderTop: '1px dashed var(--border)' }}>
+                          <span style={{ fontSize: '0.55rem', fontWeight: 900, textTransform: 'uppercase', color: '#22c55e', marginBottom: '2px', display: 'block' }}>Carbohydrates ({h.carbEntries.reduce((sum, e) => sum + (e.netCarbs || 0), 0)}g net)</span>
+                          <table className="hist-meal-table">
+                            <tbody>
+                              {h.carbEntries.map((e, idx) => (
+                                <tr key={`carb-${idx}`}>
+                                  <td className="hmt-time" style={{ color: '#22c55e', opacity: 0.8 }}>{formatDisplayTime(e.time)}</td>
+                                  <td className="hmt-source" style={{ color: '#22c55e' }}>{e.source}</td>
+                                  <td className="hmt-serving" style={{ color: '#22c55e', opacity: 0.8 }}>{e.serving}</td>
+                                  <td className="hmt-cal" style={{ color: '#22c55e', fontWeight: 700 }}>{e.netCarbs}g</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   {/* EXTRAS */}
                   <div className="hcol-meals" style={{ gap: '0.75rem', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                       {/* Fat Checkboxes */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
-                          <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FAT
+                          <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FAT ({(h.fatIntake || 0)}/2)
                         </div>
-                        <div style={{ display: 'flex', gap: '2px' }}>
-                          {[...Array(2)].map((_, idx) => (
-                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #f59e0b', background: idx < (h.fatIntake || 0) ? '#f59e0b' : 'transparent' }} />
-                          ))}
-                        </div>
+                        {Array.from({ length: h.fatIntake || 0 }).map((_, idx) => (
+                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b' }} />
+                            {h.fatEntries?.[idx] || `Fat ${idx + 1}`}
+                          </div>
+                        ))}
                       </div>
 
                       {/* Misc Checkboxes */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#a855f7' }}>
-                          <ClipboardList style={{ width: '0.7rem', height: '0.7rem' }} /> MISC
+                          <ClipboardList style={{ width: '0.7rem', height: '0.7rem' }} /> MISC ({(h.miscIntake || 0)}/4)
                         </div>
-                        <div style={{ display: 'flex', gap: '2px' }}>
-                          {[...Array(4)].map((_, idx) => (
-                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #a855f7', background: idx < (h.miscIntake || 0) ? '#a855f7' : 'transparent' }} />
-                          ))}
-                        </div>
+                        {Array.from({ length: h.miscIntake || 0 }).map((_, idx) => (
+                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#a855f7' }} />
+                            {h.miscStringEntries?.[idx] || `Misc ${idx + 1}`}
+                          </div>
+                        ))}
                       </div>
 
                       {/* Veg Checkboxes */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
-                          <Scale style={{ width: '0.7rem', height: '0.7rem' }} /> VEG
+                          <Scale style={{ width: '0.7rem', height: '0.7rem' }} /> VEG ({(h.vegIntake || 0)}/2)
                         </div>
-                        <div style={{ display: 'flex', gap: '2px' }}>
-                          {[...Array(2)].map((_, idx) => (
-                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #22c55e', background: idx < (h.vegIntake || 0) ? '#22c55e' : 'transparent' }} />
-                          ))}
-                        </div>
+                        {Array.from({ length: h.vegIntake || 0 }).map((_, idx) => (
+                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#22c55e' }} />
+                            {h.vegetableEntries?.[idx] || `Veg ${idx + 1}`}
+                          </div>
+                        ))}
                       </div>
 
                       {/* Fruit Checkboxes */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444' }}>
-                          <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FRUITS
+                          <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FRUITS ({(h.fruitIntake || 0)}/2)
                         </div>
-                        <div style={{ display: 'flex', gap: '2px' }}>
-                          {[...Array(2)].map((_, idx) => (
-                            <div key={idx} style={{ width: '0.7rem', height: '0.7rem', borderRadius: '2px', border: '1.5px solid #ef4444', background: idx < (h.fruitIntake || 0) ? '#ef4444' : 'transparent' }} />
-                          ))}
-                        </div>
+                        {Array.from({ length: h.fruitIntake || 0 }).map((_, idx) => (
+                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#ef4444' }} />
+                            {h.fruitEntries?.[idx] || `Fruit ${idx + 1}`}
+                          </div>
+                        ))}
                       </div>
                     </div>
                     {/* Legacy Misc Entries */}
@@ -512,7 +590,6 @@ export default function App() {
                               <td className="hmt-source" style={{ color: 'var(--color-purple-600, #9333ea)' }}>{e.source}</td>
                               <td className="hmt-serving">{e.serving}</td>
                               <td className="hmt-cal">{e.calories}</td>
-                              <td className="hmt-hunger">{e.hungerBefore}→{e.hungerAfter}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -554,11 +631,16 @@ export default function App() {
                   />
                   <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Protein Goal</p>
                 </div>
-                {/* Cals Consumed */}
+                {/* Cals/Carbs Consumed */}
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.3rem' }}>
                   <span className="badge bg-orange-500/10 text-orange-600" style={{ fontSize: '0.55rem' }}>Total</span>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1 }}>{totalCalories}</div>
-                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Cals Consumed</p>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1 }}>
+                    {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
+                  </div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px' }}>
+                    {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>g net</span>
+                  </div>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '4px' }}>Cals & Carbs Consumed</p>
                 </div>
               </div>
               {/* Vertical Divider */}
@@ -566,15 +648,14 @@ export default function App() {
               {/* Right: Guide */}
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.4rem' }}>Protein Calories Guide</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '0.75rem', rowGap: '0.15rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', columnGap: '0.75rem', rowGap: '0.15rem' }}>
                   {([
-                    ['VLP', '35cal · 7g Pro · 0-1g Fat'],
-                    ['LP', '55cal · 7g Pro · 3g Fat'],
-                    ['MP', '75cal · 7g Pro · 5g Fat'],
-                    ['NSV', '25cal · 5g carb'],
-                    ['Fruits', '60cal · 15g carb'],
-                    ['Fats', '45cal · 5g Fat'],
-                    ['Misc', '0-20cal'],
+                    ['VLP', 'Very Lean Proteins (35 cal per ounce)'],
+                    ['LP', 'Lean Proteins (55 cal per ounce)'],
+                    ['MP', 'Medium Proteins (75 cals per ounce)'],
+                    ['NSV', 'Non-Starchy Vegetables (25cal/5g carbs 1 c raw or 1/2 c cooked )'],
+                    ['Fats', '(45 cals/ 5g)'],
+                    ['Fruits', '(60cal, 15g carb)'],
                   ] as [string, string][]).map(([label, val]) => (
                     <div key={label} style={{ display: 'flex', gap: '0.25rem', alignItems: 'baseline' }}>
                       <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--secondary)', whiteSpace: 'nowrap' }}>{label}</span>
@@ -588,36 +669,6 @@ export default function App() {
             </motion.div>
           </section>
 
-          <section className="space-y-3 mb-10">
-            {/* Keto + On Track side-by-side in one card */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1.25rem', padding: '0.75rem 1.25rem' }}>
-              {/* Left: Ketosis Check */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Zap className={cn('w-3.5 h-3.5', log.ketosis ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30')} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--secondary)' }}>Ketosis Check</span>
-                </div>
-                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '2px', border: '1px solid var(--border)' }}>
-                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: true }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.ketosis ? 'var(--secondary)' : 'transparent', color: log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
-                  <button onClick={() => setLog(prev => ({ ...prev, ketosis: false }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.ketosis ? '#ef4444' : 'transparent', color: !log.ketosis ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
-                </div>
-              </div>
-              {/* Vertical Divider */}
-              <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch', flexShrink: 0 }} />
-              {/* Right: Stayed On Track */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <CheckCircle2 className={cn('w-3.5 h-3.5', log.followedPlan ? 'text-primary' : 'text-muted-foreground/30')} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--secondary)' }}>Stayed On Track</span>
-                </div>
-                <div style={{ display: 'flex', background: 'var(--muted)', borderRadius: '1rem', padding: '2px', border: '1px solid var(--border)' }}>
-                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: true }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: log.followedPlan ? 'var(--primary)' : 'transparent', color: log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>Yes</button>
-                  <button onClick={() => setLog(prev => ({ ...prev, followedPlan: false }))} style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.75rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: !log.followedPlan ? '#ef4444' : 'transparent', color: !log.followedPlan ? 'white' : 'var(--muted-foreground)', transition: 'all 0.2s' }}>No</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
           <div className="space-y-4">
             <section className="card meal-table-container" style={{ padding: '0.75rem 1.25rem' }}>
               <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '0.5rem' }}>
@@ -629,7 +680,6 @@ export default function App() {
                   <div className="col-time">Time</div>
                   <div className="col-serving">Serving</div>
                   <div className="col-cal">Cal</div>
-                  <div className="col-hunger">Hunger (B/A)</div>
                   <div className="col-action"></div>
                 </div>
                 <div className="meal-row pending border-2 border-primary/20 bg-primary/[0.02]">
@@ -645,11 +695,6 @@ export default function App() {
                   <div className="col-cal">
                     <input type="number" placeholder="0" className="table-input text-primary font-bold" value={pendingEntry.calories || ''} onChange={e => setPendingEntry(p => ({ ...p, calories: parseInt(e.target.value) || 0 }))} onKeyDown={e => e.key === 'Enter' && savePendingEntry()} />
                   </div>
-                  <div className="col-hunger flex items-center gap-2">
-                    <input type="number" min="1" max="10" className="table-input w-8 text-center" value={pendingEntry.hungerBefore} onChange={e => setPendingEntry(p => ({ ...p, hungerBefore: parseInt(e.target.value) }))} onKeyDown={e => e.key === 'Enter' && savePendingEntry()} />
-                    <span className="text-muted-foreground/30">/</span>
-                    <input type="number" min="1" max="10" className="table-input w-8 text-center" value={pendingEntry.hungerAfter} onChange={e => setPendingEntry(p => ({ ...p, hungerAfter: parseInt(e.target.value) }))} onKeyDown={e => e.key === 'Enter' && savePendingEntry()} />
-                  </div>
                   <div className="col-action">
                     <motion.button whileTap={{ scale: 0.9 }} onClick={savePendingEntry} disabled={!pendingEntry.source} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", pendingEntry.source ? "bg-primary text-white shadow-lg" : "bg-muted text-muted-foreground/30")}>
                       <Plus className="w-5 h-5" />
@@ -664,7 +709,6 @@ export default function App() {
                         <div className="col-time text-muted-foreground">{formatDisplayTime(entry.time)}</div>
                         <div className="col-serving text-muted-foreground">{entry.serving}</div>
                         <div className="col-cal font-bold text-secondary">{entry.calories}</div>
-                        <div className="col-hunger text-primary font-medium">{entry.hungerBefore} → {entry.hungerAfter}</div>
                         <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => removeFoodEntry(entry.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
                         </div>
@@ -675,27 +719,90 @@ export default function App() {
               </div>
             </section>
 
-            {/* ── NEW HORIZONTAL EXTRAS (FAT, MISC, VEG) ── */}
-            <section className="card" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', padding: '0.75rem 1.25rem', flexWrap: 'wrap' }}>
-              {/* Fat */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#f59e0b' }} /> Fat
+            {/* ── CARBOHYDRATE SOURCE TABLE ── */}
+            <section className="card meal-table-container block" style={{ padding: '0.75rem 1.25rem', marginTop: '1rem', borderLeft: '3px solid #22c55e' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Scale style={{ width: '0.9rem', height: '0.9rem', color: '#22c55e' }} /> Carbohydrate Source
                 </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#22c55e', background: '#22c55e15', padding: '2px 8px', borderRadius: '4px' }}>
+                  Total: {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)}g Net Carbs
+                </div>
+              </div>
+              <div className="meal-table">
+                <div className="meal-row header" style={{ color: '#22c55e' }}>
+                  <div className="col-source">Carbohydrate Source</div>
+                  <div className="col-time">Time</div>
+                  <div className="col-serving">Serving</div>
+                  <div className="col-cal">Net Carbs</div>
+                  <div className="col-action"></div>
+                </div>
+                <div className="meal-row pending border-2 border-green-500/20 bg-green-500/[0.02]">
+                  <div className="col-source">
+                    <input placeholder="What did you eat?" className="table-input font-semibold text-green-900" value={pendingCarbEntry.source} onChange={e => setPendingCarbEntry(p => ({ ...p, source: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingCarbEntry()} />
+                  </div>
+                  <div className="col-time">
+                    <input type="time" className="table-input" value={pendingCarbEntry.time} onChange={e => setPendingCarbEntry(p => ({ ...p, time: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingCarbEntry()} />
+                  </div>
+                  <div className="col-serving">
+                    <input placeholder="Siz..." className="table-input" value={pendingCarbEntry.serving} onChange={e => setPendingCarbEntry(p => ({ ...p, serving: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingCarbEntry()} />
+                  </div>
+                  <div className="col-cal">
+                    <input type="number" placeholder="0" className="table-input font-bold text-green-700" value={pendingCarbEntry.netCarbs || ''} onChange={e => setPendingCarbEntry(p => ({ ...p, netCarbs: parseInt(e.target.value) || 0 }))} onKeyDown={e => e.key === 'Enter' && savePendingCarbEntry()} />
+                  </div>
+                  <div className="col-action">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={savePendingCarbEntry} disabled={!pendingCarbEntry.source} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", pendingCarbEntry.source ? "bg-green-500 text-white shadow-lg" : "bg-muted text-muted-foreground/30")}>
+                      <Plus className="w-5 h-5" />
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <AnimatePresence mode="popLayout">
+                    {(log.carbEntries || []).map((entry) => (
+                      <motion.div key={entry.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="meal-row saved group bg-green-50/50">
+                        <div className="col-source text-green-900">{entry.source}</div>
+                        <div className="col-time text-green-700/70">{formatDisplayTime(entry.time)}</div>
+                        <div className="col-serving text-green-700/70">{entry.serving}</div>
+                        <div className="col-cal font-bold text-green-700">{entry.netCarbs}g</div>
+                        <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => removeCarbEntry(entry.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </section>
+
+            {/* ── NEW HORIZONTAL EXTRAS (FAT, MISC, VEG, FRUIT) ── */}
+            <section className="card" style={{ display: 'flex', flexDirection: 'row', gap: '1.5rem', padding: '0.75rem 1.25rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {/* Fat */}
+              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#f59e0b' }} /> Fat ({(log.fatIntake || 0)}/2)
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(2)].map((_, i) => (
-                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <input
                         type="checkbox"
                         checked={i < (log.fatIntake || 0)}
                         onChange={() => setLog(prev => ({ ...prev, fatIntake: i + 1 === (prev.fatIntake || 0) ? i : i + 1 }))}
-                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#f59e0b', cursor: 'pointer' }}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#f59e0b', cursor: 'pointer', flexShrink: 0 }}
                       />
-                    </label>
+                      <input
+                        type="text"
+                        placeholder={`Fat ${i + 1} item...`}
+                        value={log.fatEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.fatEntries || ['', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, fatEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
+                    </div>
                   ))}
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f59e0b', marginLeft: '0.2rem' }}>
-                    {(log.fatIntake || 0)} / 2
-                  </span>
                 </div>
               </div>
 
@@ -703,24 +810,32 @@ export default function App() {
               <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch' }} />
 
               {/* Misc */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <ClipboardList style={{ width: '0.8rem', height: '0.8rem', color: '#a855f7' }} /> Misc
+                  <ClipboardList style={{ width: '0.8rem', height: '0.8rem', color: '#a855f7' }} /> Misc ({(log.miscIntake || 0)}/4)
                 </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(4)].map((_, i) => (
-                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <input
                         type="checkbox"
                         checked={i < (log.miscIntake || 0)}
                         onChange={() => setLog(prev => ({ ...prev, miscIntake: i + 1 === (prev.miscIntake || 0) ? i : i + 1 }))}
-                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#a855f7', cursor: 'pointer' }}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#a855f7', cursor: 'pointer', flexShrink: 0 }}
                       />
-                    </label>
+                      <input
+                        type="text"
+                        placeholder={`Misc ${i + 1} item...`}
+                        value={log.miscStringEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.miscStringEntries || ['', '', '', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, miscStringEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
+                    </div>
                   ))}
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#a855f7', marginLeft: '0.2rem' }}>
-                    {(log.miscIntake || 0)} / 4
-                  </span>
                 </div>
               </div>
 
@@ -728,24 +843,32 @@ export default function App() {
               <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch' }} />
 
               {/* Vegetable */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Scale style={{ width: '0.8rem', height: '0.8rem', color: '#22c55e' }} /> Vegetables
+                  <Scale style={{ width: '0.8rem', height: '0.8rem', color: '#22c55e' }} /> Vegetables ({(log.vegIntake || 0)}/2)
                 </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(2)].map((_, i) => (
-                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <input
                         type="checkbox"
                         checked={i < (log.vegIntake || 0)}
                         onChange={() => setLog(prev => ({ ...prev, vegIntake: i + 1 === (prev.vegIntake || 0) ? i : i + 1 }))}
-                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#22c55e', cursor: 'pointer' }}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#22c55e', cursor: 'pointer', flexShrink: 0 }}
                       />
-                    </label>
+                      <input
+                        type="text"
+                        placeholder={`Veg ${i + 1} item...`}
+                        value={log.vegetableEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.vegetableEntries || ['', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, vegetableEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
+                    </div>
                   ))}
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#22c55e', marginLeft: '0.2rem' }}>
-                    {(log.vegIntake || 0)} / 2
-                  </span>
                 </div>
               </div>
 
@@ -753,24 +876,32 @@ export default function App() {
               <div style={{ width: '1px', background: 'var(--border)', alignSelf: 'stretch' }} />
 
               {/* Fruits */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#ef4444' }} /> Fruits
+                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#ef4444' }} /> Fruits ({(log.fruitIntake || 0)}/2)
                 </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(2)].map((_, i) => (
-                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <input
                         type="checkbox"
                         checked={i < (log.fruitIntake || 0)}
                         onChange={() => setLog(prev => ({ ...prev, fruitIntake: i + 1 === (prev.fruitIntake || 0) ? i : i + 1 }))}
-                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#ef4444', cursor: 'pointer' }}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#ef4444', cursor: 'pointer', flexShrink: 0 }}
                       />
-                    </label>
+                      <input
+                        type="text"
+                        placeholder={`Fruit ${i + 1} item...`}
+                        value={log.fruitEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.fruitEntries || ['', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, fruitEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
+                    </div>
                   ))}
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ef4444', marginLeft: '0.2rem' }}>
-                    {(log.fruitIntake || 0)} / 2
-                  </span>
                 </div>
               </div>
             </section>
