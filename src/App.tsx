@@ -185,6 +185,9 @@ export default function App() {
       let parsedHistory: DailyLog[] = [];
       if (savedHistory) {
         parsedHistory = JSON.parse(savedHistory);
+        if (parsedHistory.length > 5) {
+          parsedHistory = parsedHistory.slice(0, 5);
+        }
         setHistory(parsedHistory);
       }
 
@@ -221,7 +224,7 @@ export default function App() {
     setHistory(prev => {
       const otherDays = prev.filter(h => h.date !== log.date);
       const newHistory = [log, ...otherDays].sort((a, b) => b.date.localeCompare(a.date));
-      return newHistory;
+      return newHistory.slice(0, 5);
     });
 
     if (log.date === getLocalDateString()) {
@@ -355,10 +358,7 @@ export default function App() {
         className="no-print card mb-8"
         style={{ position: 'relative', overflow: 'hidden', padding: '0.75rem 1.25rem' }}
       >
-        {/* "Action Required" badge top-right */}
-        <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', color: 'white', fontSize: '0.55rem', fontWeight: 900, padding: '3px 12px', borderBottomLeftRadius: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-          Action Required
-        </div>
+
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
 
@@ -462,7 +462,7 @@ export default function App() {
                 <div className="hcol-meals">Extras (Fat · Misc · Veg · Fruit)</div>
                 <div className="hcol-notes">Notes / Activity</div>
               </div>
-              {history.map((h, i) => (
+              {history.slice(0, 5).map((h, i) => (
                 <div key={i} className="history-day-row">
                   {/* DATE */}
                   <div className="hcol-date">
