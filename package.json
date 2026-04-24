@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "electron:dev": "cross-env NODE_ENV=development electron .",
     "electron:start": "cross-env NODE_ENV=development wait-on http://localhost:5173 && npm run electron:dev",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder -c.mac.identity=null"
   },
   "dependencies": {
     "@capacitor/core": "^8.1.0",
@@ -25,6 +25,7 @@
     "tailwind-merge": "^3.4.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/ios": "^8.1.0",
     "@eslint/js": "^9.39.1",
@@ -46,8 +47,8 @@
     "wait-on": "^9.0.4"
   },
   "build": {
-    "appId": "com.leeunks.foodjournal",
-    "productName": "Food Journal",
+    "appId": "com.leeunks.ketojournal",
+    "productName": "Nutritional Ketosis Journal",
     "directories": {
       "output": "dist_electron"
     },
@@ -60,7 +61,8 @@
       "category": "public.app-category.healthcare-fitness",
       "target": [
         "dmg"
-      ]
+      ],
+      "icon": "resources/icon.png"
     }
   }
 }

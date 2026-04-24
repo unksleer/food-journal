@@ -4,8 +4,10 @@ const isDev = process.env.NODE_ENV === 'development';
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 420,
+        height: 850,
+        minWidth: 380,
+        maxWidth: 500,
         titleBarStyle: 'hiddenInset', // Native Mac look
         webPreferences: {
             nodeIntegration: false,

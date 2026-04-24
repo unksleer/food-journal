@@ -9,11 +9,7 @@ import {
   Flame,
   Scale,
   Zap,
-  Printer,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  BookText
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -144,22 +140,7 @@ interface DailyLog {
 
 export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<'today' | 'history' | 'settings'>('today');
-  const [clickCount, setClickCount] = useState(0);
-
-  const prevDay = () => {
-    const d = new Date(selectedDate + 'T12:00:00');
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(getLocalDateString(d));
-    setView('today');
-  };
-  
-  const nextDay = () => {
-    const d = new Date(selectedDate + 'T12:00:00');
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(getLocalDateString(d));
-    setView('today');
-  };
+  const [view, setView] = useState<'today' | 'history'>('today');
   const [showRescue, setShowRescue] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getLocalDateString());
 
@@ -193,6 +174,13 @@ export default function App() {
   // Initial Load
   useEffect(() => {
     console.log("App: Initializing v3.1...");
+    // Force alert to confirm update
+    setTimeout(() => {
+      if (window.confirm("Food Journal Updated to v3.1 (Carb Tracking). Click OK to refresh cache if needed.")) {
+        // Some basic cache busting
+      }
+    }, 1000);
+
     try {
       const savedHistory = localStorage.getItem('food-journal-history');
       let parsedHistory: DailyLog[] = [];
@@ -376,15 +364,12 @@ export default function App() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
 
           {/* Title */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }} onClick={() => {
-            setClickCount(c => c + 1);
-            if (clickCount >= 2) setShowRescue(true);
-          }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }}>
             <h1 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--secondary)', lineHeight: 1 }}>
-              {view === 'today' ? 'FUEL TRACKER: PROTEIN & CARBS' : view === 'settings' ? 'SETTINGS' : 'HISTORY'}
+              {view === 'today' ? 'FUEL TRACKER' : 'HISTORY'}
             </h1>
             <span style={{ background: '#dc2626', color: 'white', fontSize: '0.5rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', alignSelf: 'flex-start' }}>
-              v3.1
+              v3.0
             </span>
           </div>
 
@@ -394,32 +379,49 @@ export default function App() {
           {/* Date label + picker */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: '160px' }}>
             <label style={{ fontSize: '0.55rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Calendar style={{ width: '0.7rem', height: '0.7rem', color: 'var(--primary)' }} /> Select Date
+              <Calendar style={{ width: '0.7rem', height: '0.7rem', color: 'var(--primary)' }} /> Select Date to View / Edit
             </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button onClick={prevDay} style={{ background: 'var(--card)', border: '1.5px solid var(--border)', borderRadius: '0.75rem', padding: '0.35rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ChevronLeft style={{ width: '1rem', height: '1rem', color: 'var(--secondary)' }} />
-              </button>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  setView('today');
-                }}
-                style={{ flex: 1, background: 'var(--muted)', border: '1.5px solid var(--border)', borderRadius: '0.75rem', padding: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', outline: 'none', textAlign: 'center' }}
-              />
-              <button disabled={selectedDate >= getLocalDateString()} onClick={nextDay} style={{ background: 'var(--card)', border: '1.5px solid var(--border)', borderRadius: '0.75rem', padding: '0.35rem', cursor: selectedDate >= getLocalDateString() ? 'default' : 'pointer', opacity: selectedDate >= getLocalDateString() ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ChevronRight style={{ width: '1rem', height: '1rem', color: 'var(--secondary)' }} />
-              </button>
-            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setView('today');
+              }}
+              style={{ background: 'var(--muted)', border: '1.5px solid var(--border)', borderRadius: '0.75rem', padding: '0.35rem 0.75rem', fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', cursor: 'pointer', outline: 'none', width: '100%' }}
+            />
             {selectedDate !== getLocalDateString() && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#dc2626', fontSize: '0.55rem', fontWeight: 700, fontStyle: 'italic', marginTop: '2px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#dc2626', fontSize: '0.55rem', fontWeight: 700, fontStyle: 'italic' }}>
                 <Zap style={{ width: '0.6rem', height: '0.6rem' }} />
                 Editing: {formatDisplayDate(selectedDate)}
               </div>
             )}
           </div>
+
+          {/* Reset to Today */}
+          <button
+            onClick={() => { setSelectedDate(getLocalDateString()); setView('today'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            style={{ padding: '0.45rem 1rem', background: 'var(--secondary)', color: 'white', borderRadius: '0.75rem', fontWeight: 900, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            Reset to Today
+          </button>
+
+          {/* Divider */}
+          <div className="hidden sm:block w-[1px] bg-[var(--border)] self-stretch shrink-0" />
+
+          {/* Journal / History tabs */}
+          <div style={{ display: 'flex', background: 'var(--muted)', padding: '3px', borderRadius: '0.75rem', border: '1px solid var(--border)', flexShrink: 0 }}>
+            <button
+              onClick={() => setView('today')}
+              style={{ padding: '0.35rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: view === 'today' ? 'white' : 'transparent', color: view === 'today' ? 'var(--secondary)' : 'var(--muted-foreground)', boxShadow: view === 'today' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}
+            >Journal</button>
+            <button
+              onClick={() => setView('history')}
+              style={{ padding: '0.35rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer', background: view === 'history' ? 'white' : 'transparent', color: view === 'history' ? 'var(--secondary)' : 'var(--muted-foreground)', boxShadow: view === 'history' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}
+            >History</button>
+          </div>
+
+          {/* Print */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -611,7 +613,7 @@ export default function App() {
             </div>
           )}
         </section>
-      ) : view === 'today' ? (
+      ) : (
         <>
           <section className="mb-8">
             {/* Single full-width card: Goal | Cals | Guide */}
@@ -637,12 +639,9 @@ export default function App() {
                     {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
                   </div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px' }}>
-                    {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>/ 50g max</span>
+                    {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>g net</span>
                   </div>
-                  <div className="carb-progress-bg">
-                    <div className="carb-progress-fill" style={{ width: `${Math.min(100, ((log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0) / 50) * 100)}%`, backgroundColor: ((log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0) > 50) ? '#ef4444' : '#22c55e' }} />
-                  </div>
-                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '4px' }}>Cals & Carbs Track</p>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '4px' }}>Cals & Carbs Consumed</p>
                 </div>
               </div>
               {/* Vertical Divider */}
@@ -801,26 +800,24 @@ export default function App() {
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.fatIntake || 0) ? 'active-orange' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, fatIntake: i + 1 === (prev.fatIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.fatIntake || 0) ? <Flame className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Fat
-                      </button>
-                      {i < (log.fatIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Fat ${i + 1} item...`}
-                          value={log.fatEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.fatEntries || ['', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, fatEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.fatIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, fatIntake: i + 1 === (prev.fatIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#f59e0b', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <input
+                        type="text"
+                        placeholder={`Fat ${i + 1} item...`}
+                        value={log.fatEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.fatEntries || ['', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, fatEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -836,26 +833,24 @@ export default function App() {
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.miscIntake || 0) ? 'active-purple' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, miscIntake: i + 1 === (prev.miscIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.miscIntake || 0) ? <ClipboardList className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Misc
-                      </button>
-                      {i < (log.miscIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Misc ${i + 1} item...`}
-                          value={log.miscStringEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.miscStringEntries || ['', '', '', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, miscStringEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.miscIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, miscIntake: i + 1 === (prev.miscIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#a855f7', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <input
+                        type="text"
+                        placeholder={`Misc ${i + 1} item...`}
+                        value={log.miscStringEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.miscStringEntries || ['', '', '', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, miscStringEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -871,26 +866,24 @@ export default function App() {
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.vegIntake || 0) ? 'active-green' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, vegIntake: i + 1 === (prev.vegIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.vegIntake || 0) ? <Scale className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Veg
-                      </button>
-                      {i < (log.vegIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Veg ${i + 1} item...`}
-                          value={log.vegetableEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.vegetableEntries || ['', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, vegetableEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.vegIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, vegIntake: i + 1 === (prev.vegIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#22c55e', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <input
+                        type="text"
+                        placeholder={`Veg ${i + 1} item...`}
+                        value={log.vegetableEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.vegetableEntries || ['', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, vegetableEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -906,26 +899,24 @@ export default function App() {
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.fruitIntake || 0) ? 'active-red' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, fruitIntake: i + 1 === (prev.fruitIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.fruitIntake || 0) ? <Flame className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Fruit
-                      </button>
-                      {i < (log.fruitIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Fruit ${i + 1} item...`}
-                          value={log.fruitEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.fruitEntries || ['', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, fruitEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < (log.fruitIntake || 0)}
+                        onChange={() => setLog(prev => ({ ...prev, fruitIntake: i + 1 === (prev.fruitIntake || 0) ? i : i + 1 }))}
+                        style={{ width: '0.9rem', height: '0.9rem', accentColor: '#ef4444', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <input
+                        type="text"
+                        placeholder={`Fruit ${i + 1} item...`}
+                        value={log.fruitEntries?.[i] || ''}
+                        onChange={(e) => {
+                          const newEntries = [...(log.fruitEntries || ['', ''])];
+                          newEntries[i] = e.target.value;
+                          setLog(prev => ({ ...prev, fruitEntries: newEntries }));
+                        }}
+                        style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', outline: 'none' }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -937,17 +928,19 @@ export default function App() {
                 <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                   <Droplets style={{ width: '0.9rem', height: '0.9rem', color: '#3b82f6' }} /> Hydration
                 </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {[...Array(8)].map((_, i) => (
-                    <button
-                      key={i}
-                      className={`water-pill ${i < log.waterIntake ? 'active' : ''}`}
-                      onClick={() => setLog(prev => ({ ...prev, waterIntake: i + 1 === log.waterIntake ? i : i + 1 }))}
-                    >
-                      {i + 1}
-                    </button>
+                    <label key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={i < log.waterIntake}
+                        onChange={() => setLog(prev => ({ ...prev, waterIntake: i + 1 === log.waterIntake ? i : i + 1 }))}
+                        style={{ width: '0.85rem', height: '0.85rem', accentColor: '#3b82f6', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '0.45rem', color: 'var(--muted-foreground)', fontWeight: 700 }}>{i + 1}</span>
+                    </label>
                   ))}
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#3b82f6', marginLeft: '0.5rem', whiteSpace: 'nowrap', width: '100%' }}>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#3b82f6', marginLeft: '0.5rem', whiteSpace: 'nowrap' }}>
                     {log.waterIntake} / 8
                   </span>
                 </div>
@@ -1002,36 +995,17 @@ export default function App() {
             </section>
           </div>
         </>
-      ) : null}
-
-      {view === 'settings' && (
-        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="card text-center py-20 flex flex-col items-center">
-            <Settings className="w-12 h-12 text-muted-foreground/20 mb-4" />
-            <h3 className="text-lg font-bold text-secondary">Settings</h3>
-            <p className="text-muted-foreground mb-6">Manage data and preferences.</p>
-            <button onClick={() => setShowRescue(true)} className="px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 flex items-center gap-2 transition-all">
-              <Zap className="w-4 h-4" /> Launch Recovery Center
-            </button>
-            <p className="text-xs text-muted-foreground opacity-50 mt-8">Version 3.1 - Nutritional Ketosis</p>
-          </div>
-        </section>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="bottom-tab-bar no-print">
-        <button className={`bottom-tab ${view === 'today' ? 'active' : ''}`} onClick={() => { setView('today'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-          <BookText />
-          Journal
-        </button>
-        <button className={`bottom-tab ${view === 'history' ? 'active' : ''}`} onClick={() => { setView('history'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-          <ClipboardList />
-          History
-        </button>
-        <button className={`bottom-tab ${view === 'settings' ? 'active' : ''}`} onClick={() => { setView('settings'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-          <Settings />
-          Settings
-        </button>
+      {/* Rescue Center Button (Alt-Click the Calendar icon to open) */}
+      {/* Rescue Center Button (Now highly visible for recovery) */}
+      <div
+        className="fixed bottom-6 right-6 opacity-100 z-[100] no-print"
+        onClick={() => setShowRescue(true)}
+      >
+        <div className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-2xl cursor-pointer transform hover:scale-105 transition-all animate-pulse">
+          <Zap className="w-4 h-4 fill-white" /> RECOVERY CENTER
+        </div>
       </div>
 
       {showRescue && (
