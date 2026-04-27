@@ -72,7 +72,7 @@ function formatDisplayDate(dateStr: string) {
 
 function formatDisplayTime(timeStr: string) {
   if (!timeStr) return '';
-  if (['B', 'L', 'D', 'S'].includes(timeStr.toUpperCase())) return timeStr.toUpperCase();
+  if (['B', 'L', 'D', 'S', 'SV', 'NSV', 'G', 'F'].includes(timeStr.toUpperCase())) return timeStr.toUpperCase();
   const parts = timeStr.split(':');
   if (parts.length < 2) return timeStr;
   const [hours, minutes] = parts.map(Number);
@@ -179,7 +179,7 @@ export default function App() {
   const [pendingCarbEntry, setPendingCarbEntry] = useState<CarbEntry>({
     id: 'pending-carb',
     source: '',
-    time: 'B',
+    time: 'SV',
     serving: '',
     netCarbs: 0,
   });
@@ -324,13 +324,13 @@ export default function App() {
     const newEntry = {
       ...pendingCarbEntry,
       id: Math.random().toString(36).substr(2, 9),
-      time: pendingCarbEntry.time || 'B'
+      time: pendingCarbEntry.time || 'SV'
     };
     setLog(prev => ({ ...prev, carbEntries: [newEntry, ...(prev.carbEntries || [])] }));
     setPendingCarbEntry({
       id: 'pending-carb',
       source: '',
-      time: 'B',
+      time: 'SV',
       serving: '',
       netCarbs: 0,
     });
@@ -532,12 +532,6 @@ export default function App() {
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b' }}>
                           <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FAT ({(h.fatIntake || 0)}/2)
                         </div>
-                        {Array.from({ length: h.fatIntake || 0 }).map((_, idx) => (
-                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#f59e0b' }} />
-                            {h.fatEntries?.[idx] || `Fat ${idx + 1}`}
-                          </div>
-                        ))}
                       </div>
 
                       {/* Misc Checkboxes */}
@@ -545,12 +539,6 @@ export default function App() {
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#a855f7' }}>
                           <ClipboardList style={{ width: '0.7rem', height: '0.7rem' }} /> MISC ({(h.miscIntake || 0)}/4)
                         </div>
-                        {Array.from({ length: h.miscIntake || 0 }).map((_, idx) => (
-                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#a855f7' }} />
-                            {h.miscStringEntries?.[idx] || `Misc ${idx + 1}`}
-                          </div>
-                        ))}
                       </div>
 
                       {/* Veg Checkboxes */}
@@ -558,12 +546,6 @@ export default function App() {
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#22c55e' }}>
                           <Scale style={{ width: '0.7rem', height: '0.7rem' }} /> VEG ({(h.vegIntake || 0)}/2)
                         </div>
-                        {Array.from({ length: h.vegIntake || 0 }).map((_, idx) => (
-                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#22c55e' }} />
-                            {h.vegetableEntries?.[idx] || `Veg ${idx + 1}`}
-                          </div>
-                        ))}
                       </div>
 
                       {/* Fruit Checkboxes */}
@@ -571,12 +553,6 @@ export default function App() {
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444' }}>
                           <Flame style={{ width: '0.7rem', height: '0.7rem' }} /> FRUITS ({(h.fruitIntake || 0)}/2)
                         </div>
-                        {Array.from({ length: h.fruitIntake || 0 }).map((_, idx) => (
-                          <div key={idx} style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#ef4444' }} />
-                            {h.fruitEntries?.[idx] || `Fruit ${idx + 1}`}
-                          </div>
-                        ))}
                       </div>
                     </div>
                     {/* Legacy Misc Entries */}
@@ -740,7 +716,8 @@ export default function App() {
                 </div>
               </div>
               <p style={{ fontSize: '0.65rem', color: 'var(--muted-foreground)', margin: '0 0 0.75rem 0', lineHeight: '1.4' }}>
-                <strong style={{ color: 'var(--secondary)' }}>Nutritional Ketosis:</strong> Suggests 20–50 grams of net carbs daily, focusing on low-glycemic, fiber-rich, non-starchy vegetables and small portions of berries.
+                <strong style={{ color: 'var(--secondary)' }}>Nutritional Ketosis:</strong> Suggests 20–50 grams of net carbs daily, focusing on low-glycemic, fiber-rich, non-starchy vegetables and small portions of berries.<br />
+                <strong>F</strong> = Fruit, <strong>SV</strong> = Starchy Vegetable, <strong>NSV</strong> = Non-Starchy Vegetable, and <strong>G</strong> = General Carbohydrates
               </p>
               <div className="meal-table">
                 <div className="meal-row header" style={{ color: '#22c55e' }}>
@@ -756,10 +733,10 @@ export default function App() {
                   </div>
                   <div className="col-time">
                     <select className="table-input cursor-pointer" style={{ appearance: 'none', padding: '0 4px', textAlign: 'center', fontWeight: 'bold', color: '#15803d' }} value={pendingCarbEntry.time} onChange={e => setPendingCarbEntry(p => ({ ...p, time: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingCarbEntry()}>
-                      <option value="B">B</option>
-                      <option value="L">L</option>
-                      <option value="D">D</option>
-                      <option value="S">S</option>
+                      <option value="F">F</option>
+                      <option value="SV">SV</option>
+                      <option value="NSV">NSV</option>
+                      <option value="G">G</option>
                     </select>
                   </div>
                   <div className="col-serving">
@@ -799,29 +776,20 @@ export default function App() {
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                   <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#f59e0b' }} /> Fat ({(log.fatIntake || 0)}/2)
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.fatIntake || 0) ? 'active-orange' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, fatIntake: i + 1 === (prev.fatIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.fatIntake || 0) ? <Flame className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Fat
-                      </button>
-                      {i < (log.fatIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Fat ${i + 1} item...`}
-                          value={log.fatEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.fatEntries || ['', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, fatEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
-                    </div>
+                    <input
+                      key={i}
+                      type="checkbox"
+                      checked={log.fatEntries?.[i] === 'checked' || (i < (log.fatIntake || 0) && log.fatEntries?.[i] !== '')}
+                      onChange={(e) => {
+                        const newEntries = [...(log.fatEntries || ['', ''])];
+                        newEntries[i] = e.target.checked ? 'checked' : '';
+                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
+                        setLog(prev => ({ ...prev, fatEntries: newEntries, fatIntake: newIntake }));
+                      }}
+                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#f59e0b', cursor: 'pointer' }}
+                    />
                   ))}
                 </div>
               </div>
@@ -834,29 +802,20 @@ export default function App() {
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                   <ClipboardList style={{ width: '0.8rem', height: '0.8rem', color: '#a855f7' }} /> Misc ({(log.miscIntake || 0)}/4)
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.miscIntake || 0) ? 'active-purple' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, miscIntake: i + 1 === (prev.miscIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.miscIntake || 0) ? <ClipboardList className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Misc
-                      </button>
-                      {i < (log.miscIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Misc ${i + 1} item...`}
-                          value={log.miscStringEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.miscStringEntries || ['', '', '', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, miscStringEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
-                    </div>
+                    <input
+                      key={i}
+                      type="checkbox"
+                      checked={log.miscStringEntries?.[i] === 'checked' || (i < (log.miscIntake || 0) && log.miscStringEntries?.[i] !== '')}
+                      onChange={(e) => {
+                        const newEntries = [...(log.miscStringEntries || ['', '', '', ''])];
+                        newEntries[i] = e.target.checked ? 'checked' : '';
+                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
+                        setLog(prev => ({ ...prev, miscStringEntries: newEntries, miscIntake: newIntake }));
+                      }}
+                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#a855f7', cursor: 'pointer' }}
+                    />
                   ))}
                 </div>
               </div>
@@ -869,29 +828,20 @@ export default function App() {
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                   <Scale style={{ width: '0.8rem', height: '0.8rem', color: '#22c55e' }} /> Vegetables ({(log.vegIntake || 0)}/2)
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.vegIntake || 0) ? 'active-green' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, vegIntake: i + 1 === (prev.vegIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.vegIntake || 0) ? <Scale className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Veg
-                      </button>
-                      {i < (log.vegIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Veg ${i + 1} item...`}
-                          value={log.vegetableEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.vegetableEntries || ['', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, vegetableEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
-                    </div>
+                    <input
+                      key={i}
+                      type="checkbox"
+                      checked={log.vegetableEntries?.[i] === 'checked' || (i < (log.vegIntake || 0) && log.vegetableEntries?.[i] !== '')}
+                      onChange={(e) => {
+                        const newEntries = [...(log.vegetableEntries || ['', ''])];
+                        newEntries[i] = e.target.checked ? 'checked' : '';
+                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
+                        setLog(prev => ({ ...prev, vegetableEntries: newEntries, vegIntake: newIntake }));
+                      }}
+                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#22c55e', cursor: 'pointer' }}
+                    />
                   ))}
                 </div>
               </div>
@@ -904,29 +854,20 @@ export default function App() {
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                   <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#ef4444' }} /> Fruits ({(log.fruitIntake || 0)}/2)
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        className={`touch-pill ${i < (log.fruitIntake || 0) ? 'active-red' : ''}`}
-                        onClick={() => setLog(prev => ({ ...prev, fruitIntake: i + 1 === (prev.fruitIntake || 0) ? i : i + 1 }))}
-                      >
-                        {i < (log.fruitIntake || 0) ? <Flame className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-current opacity-50" />} Add Fruit
-                      </button>
-                      {i < (log.fruitIntake || 0) && (
-                        <input
-                          type="text"
-                          placeholder={`Fruit ${i + 1} item...`}
-                          value={log.fruitEntries?.[i] || ''}
-                          onChange={(e) => {
-                            const newEntries = [...(log.fruitEntries || ['', ''])];
-                            newEntries[i] = e.target.value;
-                            setLog(prev => ({ ...prev, fruitEntries: newEntries }));
-                          }}
-                          style={{ flex: 1, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '0.4rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', outline: 'none', minWidth: '100px' }}
-                        />
-                      )}
-                    </div>
+                    <input
+                      key={i}
+                      type="checkbox"
+                      checked={log.fruitEntries?.[i] === 'checked' || (i < (log.fruitIntake || 0) && log.fruitEntries?.[i] !== '')}
+                      onChange={(e) => {
+                        const newEntries = [...(log.fruitEntries || ['', ''])];
+                        newEntries[i] = e.target.checked ? 'checked' : '';
+                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
+                        setLog(prev => ({ ...prev, fruitEntries: newEntries, fruitIntake: newIntake }));
+                      }}
+                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#ef4444', cursor: 'pointer' }}
+                    />
                   ))}
                 </div>
               </div>
