@@ -117,6 +117,7 @@ interface ActivityEntry {
   id: string;
   type: string;
   duration: string;
+  calories?: string;
 }
 
 interface DailyLog {
@@ -188,6 +189,7 @@ export default function App() {
     id: 'pending-activity',
     type: '',
     duration: '',
+    calories: '',
   });
 
   // Initial Load
@@ -350,7 +352,7 @@ export default function App() {
       id: Math.random().toString(36).substr(2, 9)
     };
     setLog(prev => ({ ...prev, activities: [newEntry, ...prev.activities] }));
-    setPendingActivity({ id: 'pending-activity', type: '', duration: '' });
+    setPendingActivity({ id: 'pending-activity', type: '', duration: '', calories: '' });
   };
 
   const removeActivity = (id: string) => {
@@ -359,8 +361,13 @@ export default function App() {
       activities: prev.activities.filter(a => a.id !== id)
     }));
   };
+  const proteinCals = log.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0);
+  const carbCals = (log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0) * 4;
+  const fatCals = (log.fatIntake || 0) * 45;
+  const totalCalories = proteinCals + carbCals + fatCals;
 
-  const totalCalories = log.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0);
+  const proteinPct = totalCalories > 0 ? (proteinCals / totalCalories) * 100 : 0;
+  const carbPct = totalCalories > 0 ? (carbCals / totalCalories) * 100 : 0;
 
   return (
     <div className="min-h-screen pb-12 max-w-6xl mx-auto px-4 sm:px-8 pt-8">
@@ -576,7 +583,7 @@ export default function App() {
                     {h.activities.length > 0 && (
                       <div className="hist-activities">
                         {h.activities.map((a, idx) => (
-                          <span key={idx} className="hist-act-tag">{a.duration} {a.type}</span>
+                          <span key={idx} className="hist-act-tag">{a.duration} {a.type}{a.calories ? ` (${a.calories})` : ''}</span>
                         ))}
                       </div>
                     )}
@@ -592,66 +599,110 @@ export default function App() {
           <section className="mb-8">
             {/* Single full-width card: Goal | Cals | Guide */}
             <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col md:flex-row items-stretch gap-5">
-              {/* Left: Protein Goal + Cals Consumed stacked */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0, minWidth: '9rem' }}>
-                {/* Protein Goal */}
-                <div>
-                  <span className="badge bg-primary/10 text-primary">Target</span>
-                  <input
-                    style={{ fontSize: '1.4rem', fontWeight: 700, background: 'transparent', border: 'none', padding: 0, outline: 'none', width: '100%', display: 'block', marginTop: '2px' }}
-                    className="text-secondary placeholder:text-muted-foreground/30"
-                    placeholder="Set Goal"
-                    value={log.proteinGoal}
-                    onChange={e => setLog(prev => ({ ...prev, proteinGoal: e.target.value }))}
-                  />
-                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Protein Goal</p>
-                </div>
-                {/* Cals/Carbs Consumed */}
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.3rem' }}>
-                  <span className="badge bg-orange-500/10 text-orange-600" style={{ fontSize: '0.55rem' }}>Total</span>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1 }}>
-                    {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
+              {/* Left & Middle: Stats Column + Pie Chart Column */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', width: '100%', alignItems: 'center' }} className="md:w-auto md:flex-shrink-0">
+                {/* Column 1: Stats */}
+                <div className="flex flex-col gap-3 min-w-[8rem]">
+                  <div>
+                    <span className="badge bg-primary/10 text-primary">Target</span>
+                    <input
+                      style={{ fontSize: '1.4rem', fontWeight: 700, background: 'transparent', border: 'none', padding: 0, outline: 'none', width: '100%', display: 'block', marginTop: '2px' }}
+                      className="text-secondary placeholder:text-muted-foreground/30"
+                      placeholder="Set Goal"
+                      value={log.proteinGoal}
+                      onChange={e => setLog(prev => ({ ...prev, proteinGoal: e.target.value }))}
+                    />
+                    <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Protein Goal</p>
                   </div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px' }}>
-                    {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>/ 50g max</span>
-                  </div>
-                  <div className="carb-progress-bg">
-                    <div className="carb-progress-fill" style={{ width: `${Math.min(100, ((log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0) / 50) * 100)}%`, backgroundColor: ((log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0) > 50) ? '#ef4444' : '#22c55e' }} />
-                  </div>
-                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '4px' }}>Cals & Carbs Track</p>
-                </div>
-              </div>
-              {/* Vertical Divider */}
-              <div className="w-full h-[1px] md:w-[1px] md:h-auto bg-[var(--border)] self-stretch shrink-0 my-2 md:my-0" />
-              {/* Right: Guide */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.4rem' }}>Protein Calories Guide</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', columnGap: '0.75rem', rowGap: '0.15rem' }}>
-                  {([
-                    ['VLP', 'Very Lean Proteins (35 cal per ounce)'],
-                    ['LP', 'Lean Proteins (55 cal per ounce)'],
-                    ['MP', 'Medium Proteins (75 cals per ounce)'],
-                    ['NSV', 'Non-Starchy Vegetables (25cal/5g carbs 1 c raw or 1/2 c cooked )'],
-                    ['Fats', '(45 cals/ 5g)'],
-                    ['Fruits', '(60cal, 15g carb)'],
-                  ] as [string, string][]).map(([label, val]) => (
-                    <div key={label} style={{ display: 'flex', gap: '0.25rem', alignItems: 'baseline' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--secondary)', whiteSpace: 'nowrap' }}>{label}</span>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</span>
+                  
+                  {/* Horizontal Divider */}
+                  <div className="w-full h-[1px] bg-[var(--border)]" />
+
+                  {/* Pie Chart Legend */}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary)' }} />
+                      <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Pro</span>
                     </div>
-                  ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }} />
+                      <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Carb</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+                      <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Fat</span>
+                    </div>
+                  </div>
+
+                  {/* Total Calories Consumed */}
+                  <div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, marginTop: '2px' }}>
+                      {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
+                    </div>
+                    <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '2px' }}>Total Calories Consumed</p>
+                  </div>
+                  
+                  {/* Separator */}
+                  <div className="w-full h-[1px] bg-[var(--border)]" />
+
+                  {/* Total Carbs Consumed */}
+                  <div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px' }}>
+                      {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>/ 50g max</span>
+                    </div>
+                    <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '4px' }}>Total Carbs Consumed</p>
+                  </div>
+                </div>
+
+                {/* Column 2: Pie Chart */}
+                <div className="flex items-center justify-center pl-2 sm:pl-4 sm:border-l sm:border-[var(--border)] pr-2 sm:pr-0">
+                  <div 
+                    title={`Protein: ${Math.round(proteinPct)}%, Carbs: ${Math.round(carbPct)}%, Fat: ${Math.round(100 - proteinPct - carbPct)}%`}
+                    style={{ 
+                      width: '4.5rem', 
+                      height: '4.5rem', 
+                      borderRadius: '50%',
+                      background: totalCalories > 0 ? `conic-gradient(var(--primary) 0% ${proteinPct}%, #3b82f6 ${proteinPct}% ${proteinPct + carbPct}%, #f59e0b ${proteinPct + carbPct}% 100%)` : 'var(--muted)',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      border: '2px solid white'
+                    }} 
+                  />
                 </div>
               </div>
-              <Scale className="absolute -bottom-4 -right-4 w-20 h-20 text-primary opacity-[0.03] rotate-12" />
-              <Flame className="absolute -bottom-4 -left-4 w-16 h-16 text-orange-500 opacity-[0.03] rotate-12" />
+              {/* Full-width separator between stats and guide — visible on mobile */}
+              <hr style={{ width: '100%', border: 'none', borderTop: '1px solid rgba(128,128,128,0.35)', margin: '0.25rem 0' }} />
+              {/* Right: Nutritional Ketosis Statement */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Nutritional Ketosis</p>
+                <p style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', lineHeight: '1.6', marginBottom: '0.5rem' }}>
+                  A metabolic state in which the body primarily uses fat for energy instead of carbohydrates, producing molecules called ketones. This typically occurs when carbohydrate intake is reduced, though individual responses may vary.
+                </p>
+                <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Disclaimer</p>
+                <p style={{ fontSize: '0.58rem', color: 'var(--muted-foreground)', lineHeight: '1.5', fontStyle: 'italic' }}>
+                  For informational purposes only, not medical or nutritional advice. Consult a physician or registered dietitian for personalized guidance.
+                </p>
+              </div>
             </motion.div>
           </section>
 
           <div className="space-y-4">
             <section className="card meal-table-container" style={{ padding: '0.75rem 1.25rem' }}>
-              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '2px' }}>
-                <ClipboardList style={{ width: '0.9rem', height: '0.9rem', color: 'var(--primary)' }} /> Meal Intake
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '4px' }}>
+                <ClipboardList style={{ width: '0.9rem', height: '0.9rem', color: 'var(--primary)' }} /> Protein Source Input
               </h2>
+              {/* Protein calorie guide */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem 1rem', margin: '0 0 0.35rem 1.3rem' }}>
+                {([
+                  ['VLP', 'Very Lean Proteins (35 cal / oz)'],
+                  ['LP', 'Lean Proteins (55 cals / oz)'],
+                  ['MP', 'Medium Proteins (75 cals / oz)'],
+                ] as [string, string][]).map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', gap: '0.25rem', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--primary)', whiteSpace: 'nowrap' }}>{label}</span>
+                    <span style={{ fontSize: '0.55rem', color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>{val}</span>
+                  </div>
+                ))}
+              </div>
               <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--muted-foreground)', margin: '0 0 0.5rem 1.3rem' }}>
                 B = Breakfast, L = Lunch, D = Dinner, S = Snack
               </p>
@@ -705,19 +756,31 @@ export default function App() {
               </div>
             </section>
 
-            {/* ── CARBOHYDRATE SOURCE TABLE ── */}
+            {/* ── CARBOHYDRATE SOURCE INPUT TABLE ── */}
             <section className="card meal-table-container block" style={{ padding: '0.75rem 1.25rem', marginTop: '1rem', borderLeft: '3px solid #22c55e' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Scale style={{ width: '0.9rem', height: '0.9rem', color: '#22c55e' }} /> Carbohydrate Source
+                  <Scale style={{ width: '0.9rem', height: '0.9rem', color: '#22c55e' }} /> Carbohydrate Source Input
                 </h2>
                 <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#22c55e', background: '#22c55e15', padding: '2px 8px', borderRadius: '4px' }}>
                   Total: {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)}g Net Carbs
                 </div>
               </div>
-              <p style={{ fontSize: '0.65rem', color: 'var(--muted-foreground)', margin: '0 0 0.75rem 0', lineHeight: '1.4' }}>
-                <strong style={{ color: 'var(--secondary)' }}>Nutritional Ketosis:</strong> Suggests 20–50 grams of net carbs daily, focusing on low-glycemic, fiber-rich, non-starchy vegetables and small portions of berries.<br />
-                <strong>F</strong> = Fruit, <strong>SV</strong> = Starchy Vegetable, <strong>NSV</strong> = Non-Starchy Vegetable, and <strong>G</strong> = General Carbohydrates
+              {/* Carb calorie guide */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem 1rem', margin: '0 0 0.35rem 0' }}>
+                {([
+                  ['NSV', 'Non-Starchy Veg (25 cals / 5 carbs per 1c raw or ½c cooked)'],
+                  ['SV', 'Starchy Veg (30 cals / 10-15g carbs per ½c cooked)'],
+                  ['F', 'Fruits (60 cals / 15g carbs per ½c or 1 small whole)'],
+                ] as [string, string][]).map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', gap: '0.25rem', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#15803d', whiteSpace: 'nowrap' }}>{label}</span>
+                    <span style={{ fontSize: '0.55rem', color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--muted-foreground)', margin: '0 0 0.5rem 0' }}>
+                <strong>F</strong> = Fruit, <strong>SV</strong> = Starchy Vegetable, <strong>NSV</strong> = Non-Starchy Vegetable, <strong>G</strong> = General Carbohydrates
               </p>
               <div className="meal-table">
                 <div className="meal-row header" style={{ color: '#22c55e' }}>
@@ -903,6 +966,7 @@ export default function App() {
                 <div className="meal-row header">
                   <div className="col-activity">Activity / Workout</div>
                   <div className="col-duration">Duration</div>
+                  <div className="col-duration">Calorie Burn</div>
                   <div className="col-action"></div>
                 </div>
                 <div className="meal-row pending border-2 border-primary/20 bg-primary/[0.02]">
@@ -911,6 +975,9 @@ export default function App() {
                   </div>
                   <div className="col-duration">
                     <input placeholder="e.g. 30 min" className="table-input" value={pendingActivity.duration} onChange={e => setPendingActivity(p => ({ ...p, duration: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingActivity()} />
+                  </div>
+                  <div className="col-duration">
+                    <input placeholder="e.g. 200 kcal" className="table-input" value={pendingActivity.calories || ''} onChange={e => setPendingActivity(p => ({ ...p, calories: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingActivity()} />
                   </div>
                   <div className="col-action">
                     <motion.button whileTap={{ scale: 0.9 }} onClick={savePendingActivity} disabled={!pendingActivity.type} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", pendingActivity.type ? "bg-primary text-white shadow-lg" : "bg-muted text-muted-foreground/30")}>
@@ -924,6 +991,7 @@ export default function App() {
                       <motion.div key={activity.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="meal-row saved group">
                         <div className="col-activity font-semibold text-secondary">{activity.type}</div>
                         <div className="col-duration text-muted-foreground">{activity.duration}</div>
+                        <div className="col-duration text-muted-foreground font-bold">{activity.calories}</div>
                         <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => removeActivity(activity.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
                         </div>
