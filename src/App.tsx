@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  BookText
+  BookText,
+  Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -596,93 +597,96 @@ export default function App() {
         </section>
       ) : view === 'today' ? (
         <>
-          <section className="mb-8">
-            {/* Single full-width card: Goal | Cals | Guide */}
-            <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col md:flex-row items-stretch gap-5">
-              {/* Left & Middle: Stats Column + Pie Chart Column */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', width: '100%', alignItems: 'center' }} className="md:w-auto md:flex-shrink-0">
-                {/* Column 1: Stats */}
-                <div className="flex flex-col gap-3 min-w-[8rem]">
-                  <div>
-                    <span className="badge bg-primary/10 text-primary">Target</span>
-                    <input
-                      style={{ fontSize: '1.4rem', fontWeight: 700, background: 'transparent', border: 'none', padding: 0, outline: 'none', width: '100%', display: 'block', marginTop: '2px' }}
-                      className="text-secondary placeholder:text-muted-foreground/30"
-                      placeholder="Set Goal"
-                      value={log.proteinGoal}
-                      onChange={e => setLog(prev => ({ ...prev, proteinGoal: e.target.value }))}
-                    />
-                    <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Protein Goal</p>
-                  </div>
-                  
-                  {/* Horizontal Divider */}
-                  <div className="w-full h-[1px] bg-[var(--border)]" />
+          <section className="mb-8 flex flex-col gap-4">
+            {/* Nutritional Ketosis Card */}
+            <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col justify-center">
+              <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Nutritional Ketosis</p>
+              <p style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', lineHeight: '1.6', marginBottom: '0.5rem' }}>
+                A metabolic state in which the body primarily uses fat for energy instead of carbohydrates, producing molecules called ketones. This typically occurs when carbohydrate intake is reduced, though individual responses may vary.
+              </p>
+              <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Disclaimer</p>
+              <p style={{ fontSize: '0.58rem', color: 'var(--muted-foreground)', lineHeight: '1.5', fontStyle: 'italic' }}>
+                For informational purposes only, not medical or nutritional advice. Consult a physician or registered dietitian for personalized guidance.
+              </p>
+            </motion.div>
 
-                  {/* Pie Chart Legend */}
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary)' }} />
-                      <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Pro</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }} />
-                      <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Carb</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
-                      <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Fat</span>
-                    </div>
+            {/* Target & Stats Cards */}
+            <div className="flex flex-col gap-4">
+              {/* Top Card: Pie Chart */}
+              <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col items-center justify-center gap-4 py-4">
+                {/* Pie Chart Legend */}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary)' }} />
+                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Pro</span>
                   </div>
-
-                  {/* Total Calories Consumed */}
-                  <div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, marginTop: '2px' }}>
-                      {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
-                    </div>
-                    <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '2px' }}>Total Calories Consumed</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }} />
+                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Carb</span>
                   </div>
-                  
-                  {/* Separator */}
-                  <div className="w-full h-[1px] bg-[var(--border)]" />
-
-                  {/* Total Carbs Consumed */}
-                  <div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px' }}>
-                      {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>/ 50g max</span>
-                    </div>
-                    <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginTop: '4px' }}>Total Carbs Consumed</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Fat</span>
                   </div>
                 </div>
 
-                {/* Column 2: Pie Chart */}
-                <div className="flex items-center justify-center pl-2 sm:pl-4 sm:border-l sm:border-[var(--border)] pr-2 sm:pr-0">
-                  <div 
-                    title={`Protein: ${Math.round(proteinPct)}%, Carbs: ${Math.round(carbPct)}%, Fat: ${Math.round(100 - proteinPct - carbPct)}%`}
-                    style={{ 
-                      width: '4.5rem', 
-                      height: '4.5rem', 
-                      borderRadius: '50%',
-                      background: totalCalories > 0 ? `conic-gradient(var(--primary) 0% ${proteinPct}%, #3b82f6 ${proteinPct}% ${proteinPct + carbPct}%, #f59e0b ${proteinPct + carbPct}% 100%)` : 'var(--muted)',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      border: '2px solid white'
-                    }} 
+                {/* Pie Chart */}
+                <div 
+                  title={`Protein: ${Math.round(proteinPct)}%, Carbs: ${Math.round(carbPct)}%, Fat: ${Math.round(100 - proteinPct - carbPct)}%`}
+                  style={{ 
+                    width: '6.5rem', 
+                    height: '6.5rem', 
+                    borderRadius: '50%',
+                    background: totalCalories > 0 ? `conic-gradient(var(--primary) 0% ${proteinPct}%, #3b82f6 ${proteinPct}% ${proteinPct + carbPct}%, #f59e0b ${proteinPct + carbPct}% 100%)` : 'var(--muted)',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    border: '2px solid white'
+                  }} 
+                />
+              </motion.div>
+
+              {/* Bottom Card: Stats */}
+              <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col justify-center gap-3" style={{ padding: '0.75rem 1.25rem' }}>
+                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  <Target style={{ width: '0.9rem', height: '0.9rem', color: 'var(--primary)' }} /> Target
+                </h2>
+                
+                {/* Horizontal Divider */}
+                <div className="w-full h-[1px] bg-[var(--border)]" />
+
+                <div>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)' }}>Protein Goal</p>
+                  <input
+                    style={{ fontSize: '1.4rem', fontWeight: 700, background: 'transparent', border: 'none', borderBottom: '1px solid var(--muted-foreground)', padding: '0 0 2px 0', outline: 'none', width: '100%', display: 'block', marginTop: '2px' }}
+                    className="text-secondary placeholder:text-muted-foreground/30 focus:border-primary transition-colors"
+                    placeholder="Set Goal"
+                    value={log.proteinGoal}
+                    onChange={e => setLog(prev => ({ ...prev, proteinGoal: e.target.value }))}
                   />
                 </div>
-              </div>
-              {/* Full-width separator between stats and guide — visible on mobile */}
-              <hr style={{ width: '100%', border: 'none', borderTop: '1px solid rgba(128,128,128,0.35)', margin: '0.25rem 0' }} />
-              {/* Right: Nutritional Ketosis Statement */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Nutritional Ketosis</p>
-                <p style={{ fontSize: '0.6rem', color: 'var(--muted-foreground)', lineHeight: '1.6', marginBottom: '0.5rem' }}>
-                  A metabolic state in which the body primarily uses fat for energy instead of carbohydrates, producing molecules called ketones. This typically occurs when carbohydrate intake is reduced, though individual responses may vary.
-                </p>
-                <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Disclaimer</p>
-                <p style={{ fontSize: '0.58rem', color: 'var(--muted-foreground)', lineHeight: '1.5', fontStyle: 'italic' }}>
-                  For informational purposes only, not medical or nutritional advice. Consult a physician or registered dietitian for personalized guidance.
-                </p>
-              </div>
-            </motion.div>
+                
+                {/* Horizontal Divider */}
+                <div className="w-full h-[1px] bg-[var(--border)]" />
+
+                {/* Total Calories Consumed */}
+                <div>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '2px' }}>Total Protein Calories Consumed</p>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, marginTop: '2px', borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
+                    {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
+                  </div>
+                </div>
+                
+                {/* Separator */}
+                <div className="w-full h-[1px] bg-[var(--border)]" />
+
+                {/* Total Carbs Consumed */}
+                <div>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '4px' }}>Total Carbs Consumed</p>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px', borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
+                    {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>/ 50g max</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </section>
 
           <div className="space-y-4">
@@ -832,109 +836,7 @@ export default function App() {
               </div>
             </section>
 
-            {/* ── NEW HORIZONTAL EXTRAS (FAT, MISC, VEG, FRUIT) ── */}
-            <section className="card flex flex-col sm:flex-row sm:flex-wrap items-start gap-6 px-5 py-3">
-              {/* Fat */}
-              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#f59e0b' }} /> Fat ({(log.fatIntake || 0)}/2)
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {[...Array(2)].map((_, i) => (
-                    <input
-                      key={i}
-                      type="checkbox"
-                      checked={log.fatEntries?.[i] === 'checked' || (i < (log.fatIntake || 0) && log.fatEntries?.[i] !== '')}
-                      onChange={(e) => {
-                        const newEntries = [...(log.fatEntries || ['', ''])];
-                        newEntries[i] = e.target.checked ? 'checked' : '';
-                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
-                        setLog(prev => ({ ...prev, fatEntries: newEntries, fatIntake: newIntake }));
-                      }}
-                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#f59e0b', cursor: 'pointer' }}
-                    />
-                  ))}
-                </div>
-              </div>
 
-              {/* Divider */}
-              <div className="hidden sm:block w-[1px] bg-[var(--border)] self-stretch" />
-
-              {/* Misc */}
-              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <ClipboardList style={{ width: '0.8rem', height: '0.8rem', color: '#a855f7' }} /> Misc ({(log.miscIntake || 0)}/4)
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {[...Array(4)].map((_, i) => (
-                    <input
-                      key={i}
-                      type="checkbox"
-                      checked={log.miscStringEntries?.[i] === 'checked' || (i < (log.miscIntake || 0) && log.miscStringEntries?.[i] !== '')}
-                      onChange={(e) => {
-                        const newEntries = [...(log.miscStringEntries || ['', '', '', ''])];
-                        newEntries[i] = e.target.checked ? 'checked' : '';
-                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
-                        setLog(prev => ({ ...prev, miscStringEntries: newEntries, miscIntake: newIntake }));
-                      }}
-                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#a855f7', cursor: 'pointer' }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="hidden sm:block w-[1px] bg-[var(--border)] self-stretch" />
-
-              {/* Vegetable */}
-              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Scale style={{ width: '0.8rem', height: '0.8rem', color: '#22c55e' }} /> Vegetables ({(log.vegIntake || 0)}/2)
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {[...Array(2)].map((_, i) => (
-                    <input
-                      key={i}
-                      type="checkbox"
-                      checked={log.vegetableEntries?.[i] === 'checked' || (i < (log.vegIntake || 0) && log.vegetableEntries?.[i] !== '')}
-                      onChange={(e) => {
-                        const newEntries = [...(log.vegetableEntries || ['', ''])];
-                        newEntries[i] = e.target.checked ? 'checked' : '';
-                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
-                        setLog(prev => ({ ...prev, vegetableEntries: newEntries, vegIntake: newIntake }));
-                      }}
-                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#22c55e', cursor: 'pointer' }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="hidden sm:block w-[1px] bg-[var(--border)] self-stretch" />
-
-              {/* Fruits */}
-              <div style={{ flex: 1, minWidth: '140px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Flame style={{ width: '0.8rem', height: '0.8rem', color: '#ef4444' }} /> Fruits ({(log.fruitIntake || 0)}/2)
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {[...Array(2)].map((_, i) => (
-                    <input
-                      key={i}
-                      type="checkbox"
-                      checked={log.fruitEntries?.[i] === 'checked' || (i < (log.fruitIntake || 0) && log.fruitEntries?.[i] !== '')}
-                      onChange={(e) => {
-                        const newEntries = [...(log.fruitEntries || ['', ''])];
-                        newEntries[i] = e.target.checked ? 'checked' : '';
-                        const newIntake = newEntries.filter(x => x === 'checked' || x !== '').length;
-                        setLog(prev => ({ ...prev, fruitEntries: newEntries, fruitIntake: newIntake }));
-                      }}
-                      style={{ width: '1.25rem', height: '1.25rem', accentColor: '#ef4444', cursor: 'pointer' }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </section>
 
             <section className="card" style={{ padding: '0.75rem 1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'space-between' }}>
