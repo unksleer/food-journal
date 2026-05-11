@@ -48,6 +48,7 @@ function getInitialLog(date: string): DailyLog {
     fruitIntake: 0,
     foodEntries: [],
     carbEntries: [],
+    fatSourceEntries: [],
     miscEntries: [],
     miscStringEntries: ['', '', '', ''],
     fatEntries: ['', ''],
@@ -104,6 +105,14 @@ interface CarbEntry {
   netCarbs: number;
 }
 
+interface FatEntry {
+  id: string;
+  source: string;
+  time: string;
+  serving: string;
+  fatGrams: number;
+}
+
 interface MiscEntry {
   id: string;
   source: string;
@@ -135,6 +144,7 @@ interface DailyLog {
   fruitIntake?: number;
   foodEntries: FoodEntry[];
   carbEntries: CarbEntry[];
+  fatSourceEntries: FatEntry[];
   miscEntries: MiscEntry[];
   miscStringEntries: string[];
   fatEntries: string[];
@@ -184,6 +194,14 @@ export default function App() {
     time: 'SV',
     serving: '',
     netCarbs: 0,
+  });
+
+  const [pendingFatEntry, setPendingFatEntry] = useState<FatEntry>({
+    id: 'pending-fat',
+    source: '',
+    time: 'B',
+    serving: '',
+    fatGrams: 0,
   });
 
   const [pendingActivity, setPendingActivity] = useState<ActivityEntry>({
@@ -346,6 +364,24 @@ export default function App() {
     }));
   };
 
+  const savePendingFatEntry = () => {
+    if (!pendingFatEntry.source) return;
+    const newEntry = {
+      ...pendingFatEntry,
+      id: Math.random().toString(36).substr(2, 9),
+      time: pendingFatEntry.time || 'B'
+    };
+    setLog(prev => ({ ...prev, fatSourceEntries: [newEntry, ...(prev.fatSourceEntries || [])] }));
+    setPendingFatEntry({ id: 'pending-fat', source: '', time: 'B', serving: '', fatGrams: 0 });
+  };
+
+  const removeFatEntry = (id: string) => {
+    setLog(prev => ({
+      ...prev,
+      fatSourceEntries: (prev.fatSourceEntries || []).filter(e => e.id !== id)
+    }));
+  };
+
   const savePendingActivity = () => {
     if (!pendingActivity.type) return;
     const newEntry = {
@@ -364,11 +400,12 @@ export default function App() {
   };
   const proteinCals = log.foodEntries.reduce((sum, e) => sum + (e.calories || 0), 0);
   const carbCals = (log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0) * 4;
-  const fatCals = (log.fatIntake || 0) * 45;
+  const fatCals = (log.fatSourceEntries || []).reduce((sum, e) => sum + (e.fatGrams || 0), 0) * 9;
   const totalCalories = proteinCals + carbCals + fatCals;
 
   const proteinPct = totalCalories > 0 ? (proteinCals / totalCalories) * 100 : 0;
   const carbPct = totalCalories > 0 ? (carbCals / totalCalories) * 100 : 0;
+  const fatPct = totalCalories > 0 ? (fatCals / totalCalories) * 100 : 0;
 
   return (
     <div className="min-h-screen pb-12 max-w-6xl mx-auto px-4 sm:px-8 pt-8">
@@ -597,7 +634,7 @@ export default function App() {
         </section>
       ) : view === 'today' ? (
         <>
-          <section className="mb-8 flex flex-col gap-4">
+          <section className="mb-2 flex flex-col gap-2">
             {/* Nutritional Ketosis Card */}
             <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col justify-center">
               <p style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '0.3rem' }}>Nutritional Ketosis</p>
@@ -611,37 +648,43 @@ export default function App() {
             </motion.div>
 
             {/* Target & Stats Cards */}
-            <div className="flex flex-col gap-4">
-              {/* Top Card: Pie Chart */}
-              <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden flex flex-col items-center justify-center gap-4 py-4">
-                {/* Pie Chart Legend */}
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary)' }} />
-                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Pro</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }} />
-                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Carb</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
-                    <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--muted-foreground)' }}>Fat</span>
-                  </div>
+            <div className="flex flex-col gap-2">
+              {/* Macro Bar Chart */}
+              <motion.div whileHover={{ y: -4 }} className="card relative overflow-hidden" style={{ padding: '0.75rem 1.25rem' }}>
+                <p style={{ fontSize: '0.55rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted-foreground)', marginBottom: '6px' }}>Macro Breakdown</p>
+
+                {/* Labels row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  {[
+                    { label: 'Protein', cals: proteinCals, pct: proteinPct, color: 'var(--primary)' },
+                    { label: 'Carbs',   cals: carbCals,    pct: carbPct,    color: '#3b82f6' },
+                    { label: 'Fat',     cals: fatCals,     pct: fatPct,     color: '#f59e0b' },
+                  ].map(({ label, cals, pct, color }) => (
+                    <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: label === 'Protein' ? 'flex-start' : label === 'Fat' ? 'flex-end' : 'center', minWidth: 0 }}>
+                      <span style={{ fontSize: '0.55rem', fontWeight: 900, color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--secondary)' }}>{cals} <span style={{ fontSize: '0.55rem', color: 'var(--muted-foreground)', fontWeight: 400 }}>kcal</span></span>
+                      <span style={{ fontSize: '0.55rem', color: 'var(--muted-foreground)' }}>{Math.round(pct)}%</span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Pie Chart */}
-                <div 
-                  title={`Protein: ${Math.round(proteinPct)}%, Carbs: ${Math.round(carbPct)}%, Fat: ${Math.round(100 - proteinPct - carbPct)}%`}
-                  style={{ 
-                    width: '6.5rem', 
-                    height: '6.5rem', 
-                    borderRadius: '50%',
-                    background: totalCalories > 0 ? `conic-gradient(var(--primary) 0% ${proteinPct}%, #3b82f6 ${proteinPct}% ${proteinPct + carbPct}%, #f59e0b ${proteinPct + carbPct}% 100%)` : 'var(--muted)',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    border: '2px solid white'
-                  }} 
-                />
+                {/* Stacked bar */}
+                <div style={{ display: 'flex', width: '100%', height: '12px', borderRadius: '6px', overflow: 'hidden', background: 'var(--muted)' }}>
+                  {totalCalories > 0 ? (
+                    <>
+                      <div style={{ width: `${proteinPct}%`, background: 'var(--primary)', transition: 'width 0.4s ease' }} />
+                      <div style={{ width: `${carbPct}%`, background: '#3b82f6', transition: 'width 0.4s ease' }} />
+                      <div style={{ width: `${fatPct}%`, background: '#f59e0b', transition: 'width 0.4s ease' }} />
+                    </>
+                  ) : (
+                    <div style={{ width: '100%', background: 'var(--muted)' }} />
+                  )}
+                </div>
+
+                {/* Total */}
+                <div style={{ textAlign: 'right', marginTop: '4px' }}>
+                  <span style={{ fontSize: '0.55rem', color: 'var(--muted-foreground)', fontWeight: 700 }}>Total: {totalCalories} kcal</span>
+                </div>
               </motion.div>
 
               {/* Bottom Card: Stats */}
@@ -664,34 +707,22 @@ export default function App() {
                   />
                 </div>
                 
-                {/* Horizontal Divider */}
-                <div className="w-full h-[1px] bg-[var(--border)]" />
-
-                {/* Total Calories Consumed */}
-                <div>
-                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '2px' }}>Total Protein Calories Consumed</p>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, marginTop: '2px', borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
-                    {totalCalories} <span style={{ fontSize: '0.7em', color: 'var(--muted-foreground)' }}>kcal</span>
-                  </div>
-                </div>
                 
-                {/* Separator */}
-                <div className="w-full h-[1px] bg-[var(--border)]" />
 
-                {/* Total Carbs Consumed */}
-                <div>
-                  <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '4px' }}>Total Carbs Consumed</p>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#22c55e', lineHeight: 1.1, marginTop: '2px', borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
-                    {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.75em', opacity: 0.8 }}>/ 50g max</span>
-                  </div>
-                </div>
               </motion.div>
             </div>
           </section>
 
-          <div className="space-y-4">
+          <div className="space-y-2">
             <section className="card meal-table-container" style={{ padding: '0.75rem 1.25rem' }}>
-              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '4px' }}>
+              {/* Total Protein Calories Consumed — above the card title */}
+              <div style={{ marginBottom: '8px' }}>
+                <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '2px' }}>Total Protein Calories Consumed</p>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
+                  {proteinCals} <span style={{ fontSize: '0.7em', color: 'var(--secondary)' }}>kcal</span>
+                </div>
+              </div>
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '4px' }}>
                 <ClipboardList style={{ width: '0.9rem', height: '0.9rem', color: 'var(--primary)' }} /> Protein Source Input
               </h2>
               {/* Protein calorie guide */}
@@ -712,7 +743,7 @@ export default function App() {
               </p>
               <div className="meal-table">
                 <div className="meal-row header">
-                  <div className="col-source">Protein Source</div>
+                  <div className="col-source" style={{ color: 'var(--primary)' }}>Protein Source</div>
                   <div className="col-time">Meal</div>
                   <div className="col-serving">Serving</div>
                   <div className="col-cal">Cal</div>
@@ -761,15 +792,17 @@ export default function App() {
             </section>
 
             {/* ── CARBOHYDRATE SOURCE INPUT TABLE ── */}
-            <section className="card meal-table-container block" style={{ padding: '0.75rem 1.25rem', marginTop: '1rem', borderLeft: '3px solid #22c55e' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  <Scale style={{ width: '0.9rem', height: '0.9rem', color: '#22c55e' }} /> Carbohydrate Source Input
-                </h2>
-                <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#22c55e', background: '#22c55e15', padding: '2px 8px', borderRadius: '4px' }}>
-                  Total: {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)}g Net Carbs
+            <section className="card meal-table-container block" style={{ padding: '0.75rem 1.25rem', borderLeft: '3px solid #22c55e' }}>
+              {/* Total Carbs Consumed — above the card title */}
+              <div style={{ marginBottom: '8px' }}>
+                <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '2px' }}>Total Carbs Consumed</p>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
+                  {(log.carbEntries || []).reduce((sum, e) => sum + (e.netCarbs || 0), 0)} <span style={{ fontSize: '0.7em', color: 'var(--secondary)' }}>/ 40g max</span>
                 </div>
               </div>
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '4px' }}>
+                <Scale style={{ width: '0.9rem', height: '0.9rem', color: '#3b82f6' }} /> Carbohydrate Source Input
+              </h2>
               {/* Carb calorie guide */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem 1rem', margin: '0 0 0.35rem 0' }}>
                 {([
@@ -788,7 +821,7 @@ export default function App() {
               </p>
               <div className="meal-table">
                 <div className="meal-row header" style={{ color: '#22c55e' }}>
-                  <div className="col-source">Carbohydrate Source</div>
+                  <div className="col-source" style={{ color: '#3b82f6' }}>Carbohydrate Source</div>
                   <div className="col-time">Meal</div>
                   <div className="col-serving">Serving</div>
                   <div className="col-cal">Net Carbs</div>
@@ -836,7 +869,77 @@ export default function App() {
               </div>
             </section>
 
-
+            {/* ── FAT SOURCE INPUT TABLE ── */}
+            <section className="card meal-table-container block" style={{ padding: '0.75rem 1.25rem', borderLeft: '3px solid #f59e0b' }}>
+              {/* Fat Calories Consumed — above the card title */}
+              <div style={{ marginBottom: '8px' }}>
+                <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '2px' }}>Fat Calories Consumed</p>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--secondary)', lineHeight: 1.1, borderBottom: '1px solid var(--muted-foreground)', paddingBottom: '2px', width: '100%' }}>
+                  {(log.fatSourceEntries || []).reduce((sum, e) => sum + (e.fatGrams || 0), 0) * 9} <span style={{ fontSize: '0.7em', color: 'var(--secondary)' }}>kcal</span>
+                </div>
+              </div>
+              <h2 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, marginBottom: '4px' }}>
+                <Flame style={{ width: '0.9rem', height: '0.9rem', color: '#f59e0b' }} /> Fat Source Input
+              </h2>
+              {/* Fat guide */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem 1rem', margin: '0 0 0.35rem 1.3rem' }}>
+                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'baseline' }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#b45309', whiteSpace: 'nowrap' }}>Fats</span>
+                  <span style={{ fontSize: '0.55rem', color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>45 cals / 5g fat — Focus on Healthy Fats</span>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--muted-foreground)', margin: '0 0 0.5rem 1.3rem' }}>
+                B = Breakfast, L = Lunch, D = Dinner, S = Snack
+              </p>
+              <div className="meal-table">
+                <div className="meal-row header" style={{ color: '#f59e0b' }}>
+                  <div className="col-source" style={{ color: '#f59e0b' }}>Fat Source</div>
+                  <div className="col-time">Meal</div>
+                  <div className="col-serving">Serving</div>
+                  <div className="col-cal">Fat Grams</div>
+                  <div className="col-action"></div>
+                </div>
+                <div className="meal-row pending border-2 border-amber-500/20 bg-amber-500/[0.02]">
+                  <div className="col-source">
+                    <input placeholder="Fat source..." className="table-input font-semibold" style={{ color: '#92400e' }} value={pendingFatEntry.source} onChange={e => setPendingFatEntry(p => ({ ...p, source: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingFatEntry()} />
+                  </div>
+                  <div className="col-time">
+                    <select className="table-input cursor-pointer" style={{ appearance: 'none', padding: '0 4px', textAlign: 'center', fontWeight: 'bold', color: '#b45309' }} value={pendingFatEntry.time} onChange={e => setPendingFatEntry(p => ({ ...p, time: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingFatEntry()}>
+                      <option value="B">B</option>
+                      <option value="L">L</option>
+                      <option value="D">D</option>
+                      <option value="S">S</option>
+                    </select>
+                  </div>
+                  <div className="col-serving">
+                    <input placeholder="Siz..." className="table-input" value={pendingFatEntry.serving} onChange={e => setPendingFatEntry(p => ({ ...p, serving: e.target.value }))} onKeyDown={e => e.key === 'Enter' && savePendingFatEntry()} />
+                  </div>
+                  <div className="col-cal">
+                    <input type="number" placeholder="0" className="table-input font-bold" style={{ color: '#b45309' }} value={pendingFatEntry.fatGrams || ''} onChange={e => setPendingFatEntry(p => ({ ...p, fatGrams: parseInt(e.target.value) || 0 }))} onKeyDown={e => e.key === 'Enter' && savePendingFatEntry()} />
+                  </div>
+                  <div className="col-action">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={savePendingFatEntry} disabled={!pendingFatEntry.source} className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-all", pendingFatEntry.source ? "bg-amber-500 text-white shadow-lg" : "bg-muted text-muted-foreground/30")}>
+                      <Plus className="w-5 h-5" />
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <AnimatePresence mode="popLayout">
+                    {(log.fatSourceEntries || []).map((entry) => (
+                      <motion.div key={entry.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="meal-row saved group">
+                        <div className="col-source" style={{ color: '#92400e' }}>{entry.source}</div>
+                        <div className="col-time" style={{ color: '#b45309', opacity: 0.7 }}>{formatDisplayTime(entry.time)}</div>
+                        <div className="col-serving" style={{ color: '#b45309', opacity: 0.7 }}>{entry.serving}</div>
+                        <div className="col-cal font-bold" style={{ color: '#b45309' }}>{entry.fatGrams}g</div>
+                        <div className="col-action opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => removeFatEntry(entry.id)} className="text-red-400 hover:text-red-500 p-1"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </section>
 
             <section className="card" style={{ padding: '0.75rem 1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'space-between' }}>

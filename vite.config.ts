@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Food Intake Journal',
-        short_name: 'Food Journal',
+        name: 'Fuel Tracker',
+        short_name: 'Fuel Tracker',
         description: 'Daily food and supplement tracking based on Medi-Weightloss.',
         theme_color: '#2563eb',
         background_color: '#f8fafc',
