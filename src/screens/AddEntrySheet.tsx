@@ -1,0 +1,147 @@
+import { useMemo, useState } from 'react';
+import { Sheet, Chips, Stepper } from '../components/ui';
+import { defaultTier, tierInfo, tiersFor, valueUnit } from '../lib/nutrition';
+import { MEALS, uid } from '../types';
+import type { Entry, EntryKind, Favorite, Meal, Tier } from '../types';
+
+export interface AddEntryRequest {
+  meal: Meal;
+  kind?: EntryKind;
+  favorite?: Favorite;
+  editing?: Entry;
+}
+
+const KINDS: { key: EntryKind; label: string }[] = [
+  { key: 'protein', label: 'Protein' },
+  { key: 'carb', label: 'Carbs' },
+  { key: 'fat', label: 'Fat' },
+];
+
+interface FormProps {
+  request: AddEntryRequest;
+  onClose: () => void;
+  onSave: (entry: Entry) => void;
+  onSaveFavorite: (fav: Favorite) => void;
+}
+
+export function AddEntrySheet({ request, formKey, onClose, onSave, onSaveFavorite }: {
+  request: AddEntryRequest | null;
+  /** Changes on every open so the form starts fresh. */
+  formKey: number;
+  onClose: () => void;
+  onSave: (entry: Entry) => void;
+  onSaveFavorite: (fav: Favorite) => void;
+}) {
+  const mealLabel = request ? MEALS.find(m => m.key === (request.editing?.meal ?? request.meal))?.label.toLowerCase() : '';
+  return (
+    <Sheet open={!!request} onClose={onClose} title={request?.editing ? 'Edit entry' : `Add to ${mealLabel}`}>
+      {request && <EntryForm key={formKey} request={request} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
+    </Sheet>
+  );
+}
+
+function EntryForm({ request, onClose, onSave, onSaveFavorite }: FormProps) {
+  const src = request.editing ?? request.favorite;
+  const initialKind: EntryKind = src?.kind ?? request.kind ?? 'protein';
+  const [kind, setKind] = useState<EntryKind>(initialKind);
+  const [name, setName] = useState(src?.name ?? '');
+  const [tier, setTier] = useState<Tier>(src?.tier ?? defaultTier(initialKind));
+  const [amount, setAmount] = useState(src?.amount ?? (initialKind === 'protein' ? 3 : 1));
+  const [value, setValue] = useState(src?.value ?? 0);
+  const [valueTouched, setValueTouched] = useState(!!src);
+  const [meal, setMeal] = useState<Meal>(request.editing?.meal ?? request.meal);
+  const [favorite, setFavorite] = useState(false);
+
+  const info = tierInfo(tier);
+  const computed = useMemo(() => (info ? Math.round(info.perUnit * amount) : 0), [info, amount]);
+  const shownValue = valueTouched ? value : computed;
+  const unit = info?.unit ?? (kind === 'protein' ? 'oz' : 'serving');
+
+  const changeKind = (k: EntryKind) => {
+    setKind(k);
+    setTier(defaultTier(k));
+    setAmount(k === 'protein' ? 3 : 1);
+    setValueTouched(false);
+  };
+  const changeTier = (t: Tier) => { setTier(t); setValueTouched(false); };
+  const changeAmount = (a: number) => { setAmount(a); setValueTouched(false); };
+
+  const canSave = name.trim().length > 0 && shownValue >= 0;
+
+  const save = () => {
+    if (!canSave) return;
+    const entry: Entry = {
+      id: request.editing?.id ?? uid(),
+      kind,
+      name: name.trim(),
+      tier,
+      amount,
+      unit,
+      value: shownValue,
+      meal,
+      createdAt: request.editing?.createdAt ?? Date.now(),
+    };
+    onSave(entry);
+    if (favorite) onSaveFavorite({ id: uid(), kind, name: entry.name, tier, amount, unit, value: shownValue });
+    onClose();
+  };
+
+  const vUnit = valueUnit(kind);
+
+  return (
+    <>
+      <div className="segmented" role="tablist">
+        {KINDS.map(k => (
+          <button key={k.key} role="tab" aria-selected={kind === k.key} className={`segment ${kind === k.key ? 'active' : ''}`} onClick={() => changeKind(k.key)}>{k.label}</button>
+        ))}
+      </div>
+
+      <label className="field">
+        <span className="field-label">Food</span>
+        <input className="input" placeholder={kind === 'protein' ? 'Grilled chicken' : kind === 'carb' ? 'Broccoli' : 'Olive oil'} value={name} onChange={e => setName(e.target.value)} autoFocus={!request.editing} />
+      </label>
+
+      <div className="field">
+        <span className="field-label">{kind === 'protein' ? 'Protein type' : kind === 'carb' ? 'Carb type' : 'Type'}</span>
+        <div className={`tier-grid tier-grid-${tiersFor(kind).length}`}>
+          {tiersFor(kind).map(t => (
+            <button key={t.key} className={`tier-card ${tier === t.key ? 'active' : ''}`} onClick={() => changeTier(t.key)}>
+              <span className="tier-short">{t.short}</span>
+              <span className="tier-label">{t.label}</span>
+              <span className="tier-hint">{t.perUnit ? `${t.perUnit} ${vUnit} / ${t.unit}` : 'from label'}</span>
+            </button>
+          ))}
+        </div>
+        {info && <p className="field-help">{info.hint}</p>}
+      </div>
+
+      <div className="field">
+        <span className="field-label">Amount</span>
+        <Stepper value={amount} unit={unit === 'serving' && amount !== 1 ? 'servings' : unit} step={kind === 'protein' ? 1 : 0.5} onChange={changeAmount} />
+        <div className="calc-row">
+          <span className="calc-formula">{info && info.perUnit > 0 ? `${amount} ${unit} × ${info.perUnit} ${vUnit}` : 'Enter the value yourself'}</span>
+          <span className="calc-result">
+            = <input className="calc-input" type="number" inputMode="numeric" value={shownValue} onChange={e => { setValueTouched(true); setValue(Math.max(0, parseFloat(e.target.value) || 0)); }} /> {vUnit}
+          </span>
+        </div>
+      </div>
+
+      <div className="field">
+        <span className="field-label">Meal</span>
+        <Chips options={MEALS} value={meal} onChange={setMeal} />
+      </div>
+
+      {!request.editing && (
+        <label className="toggle-row">
+          <span>Save to quick add</span>
+          <input type="checkbox" className="toggle" checked={favorite} onChange={e => setFavorite(e.target.checked)} />
+        </label>
+      )}
+      <div className="sheet-footer-inline">
+        <button className="btn-primary" disabled={!canSave} onClick={save}>
+          {request.editing ? 'Save changes' : `Add ${shownValue} ${vUnit}`}
+        </button>
+      </div>
+    </>
+  );
+}
