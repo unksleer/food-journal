@@ -46,8 +46,8 @@ export function Trends({ days, settings }: { days: Record<string, DayLog>; setti
           labels={rows.map(r => (range === 'week' ? weekdayLetter(r.date) : String(parseDateStr(r.date).getDate())))}
           limit={settings.carbLimit}
           faded={rows.map(r => r.status === 'empty')}
-          tone="#3b82f6"
-          overTone="#f59e0b"
+          tone="var(--carb)"
+          overTone="var(--fat)"
           unit="g"
         />
       </Card>
@@ -125,8 +125,8 @@ function LineChart({ points, labels, band, max }: { points: (number | null)[]; l
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Ketone readings">
       <rect x={0} y={yv(band[1])} width={W} height={yv(band[0]) - yv(band[1])} rx={4} className="chart-band" />
       <text x={W - 4} y={yv(band[1]) + 12} textAnchor="end" className="chart-text">optimal {band[0]}–{band[1]}</text>
-      {path && <path d={path} fill="none" stroke="#10b981" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />}
-      {pts.map((p, i) => (p ? <circle key={i} cx={p.x} cy={p.y} r={4} fill="#ffffff" stroke="#10b981" strokeWidth={2.5} /> : null))}
+      {path && <path d={path} fill="none" stroke="var(--success)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />}
+      {pts.map((p, i) => (p ? <circle key={i} cx={p.x} cy={p.y} r={4} fill="var(--card)" stroke="var(--success)" strokeWidth={2.5} /> : null))}
       {labels.map((l, i) => (showLabel(i) ? <text key={`l${i}`} x={slot * i + slot / 2} y={H - 6} textAnchor="middle" className="chart-text">{l}</text> : null))}
     </svg>
   );

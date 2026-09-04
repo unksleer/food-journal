@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'Fuel Tracker',
         short_name: 'Fuel Tracker',
         description: 'A daily food journal for the Medi-Weightloss way of eating: lean protein by the ounce, counted carbs, ketones and weight.',
-        theme_color: '#10b981',
-        background_color: '#fdfcfb',
+        theme_color: '#c2410c',
+        background_color: '#fbf7f1',
         display: 'standalone',
         icons: [
           {
