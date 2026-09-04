@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Fuel Tracker',
         short_name: 'Fuel Tracker',
@@ -17,12 +17,8 @@ export default defineConfig({
         background_color: '#fbf7f1',
         display: 'standalone',
         icons: [
-          {
-            src: 'vite.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
+          { src: 'apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+          { src: 'icon-1024.png', sizes: '1024x1024', type: 'image/png', purpose: 'any maskable' }
         ]
       }
     })
