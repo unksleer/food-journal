@@ -11,6 +11,7 @@ import { History } from './screens/History';
 import { SettingsScreen } from './screens/Settings';
 import { Onboarding } from './screens/Onboarding';
 import { requestReview, syncReminders } from './lib/native';
+import { buildFoodIndex } from './lib/foods';
 import { ensureToday, loadAllDays, loadSettings, migrateLegacy, saveDay, saveSettings } from './storage';
 import { dayStatus, dayTotals } from './lib/nutrition';
 import { addDays, daysInMonth, formatLong, formatMonthYear, toDateStr, todayStr } from './lib/date';
@@ -74,6 +75,13 @@ export default function App() {
   }, []);
 
   const loggedToday = (days[todayStr()]?.entries.length ?? 0) > 0;
+  const foodIndex = useMemo(() => buildFoodIndex(days, settings.favorites), [days, settings.favorites]);
+  const weekReviewDue = useMemo(() => {
+    const now = new Date();
+    const dow = now.getDay();
+    const enoughDays = Object.values(days).filter(d => d.entries.length > 0).length >= 3;
+    return enoughDays && ((dow === 0 && now.getHours() >= 17) || dow === 1);
+  }, [days]);
   const loggedDayCount = useMemo(() => Object.values(days).filter(d => d.entries.length > 0).length, [days]);
 
   const changeSettings = (s: Settings) => {
@@ -161,11 +169,13 @@ export default function App() {
             day={day}
             settings={settings}
             streak={streak}
+            weekReviewDue={weekReviewDue}
             onChangeDay={fn => updateDay(selectedDate, fn)}
             onSelectDate={setSelectedDate}
             onAdd={req => { setAddReq(req); setAddSeq(n => n + 1); }}
             onQuickAdd={quickAdd}
             onCheckin={() => setView('checkin')}
+            onOpenTrends={() => { setView('trends'); window.scrollTo({ top: 0 }); }}
           />
         )}
         {view === 'checkin' && (
@@ -180,7 +190,7 @@ export default function App() {
 
       <TabBar view={view} onChange={v => { setView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
 
-      <AddEntrySheet request={addReq} formKey={addSeq} onClose={() => setAddReq(null)} onSave={saveEntry} onSaveFavorite={saveFavorite} />
+      <AddEntrySheet request={addReq} formKey={addSeq} foodIndex={foodIndex} onClose={() => setAddReq(null)} onSave={saveEntry} onSaveFavorite={saveFavorite} />
 
       {printMonth && <MonthPrint days={days} settings={settings} year={printMonth.year} month={printMonth.month} />}
     </div>

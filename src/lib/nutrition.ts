@@ -126,3 +126,64 @@ export function inKetosis(day: DayLog | undefined, settings: Settings): boolean 
   const z = ketoneZone(day.checkin.ketones, day.checkin.ketoneMethod ?? settings.ketoneMethod);
   return !!z && (z.key === 'light' || z.key === 'optimal' || z.key === 'high');
 }
+
+export interface WeekSummary {
+  start: string;
+  end: string;
+  daysLogged: number;
+  daysOnPlan: number;
+  avgNetCarbs: number;
+  avgProteinKcal: number;
+  weightStart?: number;
+  weightEnd?: number;
+  weightDelta?: number;
+  avgKetones?: number;
+  bestStreak: number;
+}
+
+/** Longest run of consecutive on-plan days anywhere in the journal (today counts if it is on plan so far). */
+export function bestStreak(days: Record<string, DayLog>, settings: Settings, today: string): number {
+  const dates = Object.keys(days).sort();
+  let best = 0;
+  let run = 0;
+  let prev: string | null = null;
+  for (const d of dates) {
+    const st = dayStatus(days[d], settings, d === today);
+    const good = st === 'on-plan' || (st === 'in-progress' && dayTotals(days[d]).netCarbs <= settings.carbLimit);
+    if (!good) { run = 0; prev = null; continue; }
+    if (prev !== null) {
+      const gap = (Date.parse(d + 'T12:00:00') - Date.parse(prev + 'T12:00:00')) / 86_400_000;
+      run = Math.round(gap) === 1 ? run + 1 : 1;
+    } else {
+      run = 1;
+    }
+    prev = d;
+    if (run > best) best = run;
+  }
+  return best;
+}
+
+export function weekSummary(days: Record<string, DayLog>, settings: Settings, dates: string[], today: string): WeekSummary {
+  const logged = dates.filter(d => days[d] && days[d].entries.length > 0);
+  const onPlan = dates.filter(d => {
+    const st = dayStatus(days[d], settings, d === today);
+    return st === 'on-plan' || (st === 'in-progress' && dayTotals(days[d]).netCarbs <= settings.carbLimit);
+  }).length;
+  const totals = logged.map(d => dayTotals(days[d]));
+  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  const weights = dates.map(d => days[d]?.checkin.weight).filter((w): w is number => typeof w === 'number');
+  const ketones = dates.map(d => days[d]?.checkin).filter(c => c && typeof c.ketones === 'number' && (c.ketoneMethod ?? settings.ketoneMethod) === 'blood').map(c => c!.ketones as number);
+  return {
+    start: dates[0],
+    end: dates[dates.length - 1],
+    daysLogged: logged.length,
+    daysOnPlan: onPlan,
+    avgNetCarbs: avg(totals.map(t => t.netCarbs)),
+    avgProteinKcal: avg(totals.map(t => t.proteinKcal)),
+    weightStart: weights[0],
+    weightEnd: weights[weights.length - 1],
+    weightDelta: weights.length >= 2 ? weights[weights.length - 1] - weights[0] : undefined,
+    avgKetones: ketones.length ? avg(ketones) : undefined,
+    bestStreak: bestStreak(days, settings, today),
+  };
+}

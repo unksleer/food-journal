@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
+import { Share2 } from 'lucide-react';
 import { Card, Segmented } from '../components/ui';
-import { dayStatus, dayTotals } from '../lib/nutrition';
+import { dayStatus, dayTotals, weekSummary } from '../lib/nutrition';
+import { shareWeekCard } from '../lib/shareCard';
 import { formatRange, lastNDays, todayStr, weekdayLetter, weekdayShort, parseDateStr } from '../lib/date';
 import type { DayLog, Settings } from '../types';
 
@@ -8,8 +10,22 @@ type Range = 'week' | 'month';
 
 export function Trends({ days, settings }: { days: Record<string, DayLog>; settings: Settings }) {
   const [range, setRange] = useState<Range>('week');
+  const [shareMsg, setShareMsg] = useState('');
   const n = range === 'week' ? 7 : 30;
   const dates = useMemo(() => lastNDays(todayStr(), n), [n]);
+  const summary = useMemo(() => weekSummary(days, settings, lastNDays(todayStr(), 7), todayStr()), [days, settings]);
+
+  const share = async () => {
+    setShareMsg('');
+    try {
+      const r = await shareWeekCard(summary, settings);
+      if (r === 'downloaded') setShareMsg('Saved as an image.');
+      if (r === 'unavailable') setShareMsg('Sharing is not available here.');
+    } catch (err) {
+      console.error(err);
+      setShareMsg('Could not create the image.');
+    }
+  };
 
   const rows = dates.map(date => {
     const d = days[date];
@@ -32,6 +48,19 @@ export function Trends({ days, settings }: { days: Record<string, DayLog>; setti
         </div>
         <Segmented options={[{ key: 'week', label: 'Week' }, { key: 'month', label: 'Month' }]} value={range} onChange={setRange} size="sm" />
       </header>
+
+      {range === 'week' && (
+        <Card className="week-review">
+          <div className="row-between">
+            <div>
+              <span className="row-title">Week in review</span>
+              <p className="muted">{summary.daysLogged === 0 ? 'Log a few days and your summary appears here.' : `Best streak ${summary.bestStreak} ${summary.bestStreak === 1 ? 'day' : 'days'}${summary.avgKetones !== undefined ? ` · avg ketones ${summary.avgKetones.toFixed(1)}` : ''}`}</p>
+            </div>
+            <button className="share-btn" onClick={share} disabled={summary.daysLogged === 0} aria-label="Share week as image"><Share2 size={18} /> Share</button>
+          </div>
+          {shareMsg && <p className="status-msg">{shareMsg}</p>}
+        </Card>
+      )}
 
       <div className="stat-grid">
         <Card className="stat"><span className="stat-value">{onPlan} / {n}</span><span className="stat-label">days on plan</span></Card>

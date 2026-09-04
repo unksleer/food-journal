@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Flame, Plus, Trash2, Activity as ActivityIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Plus, Trash2, Activity as ActivityIcon, TrendingUp } from 'lucide-react';
 import { Card, ProgressRow, SectionLabel, SwipeRow } from '../components/ui';
 import { dayTotals, inKetosis, ketoneUnit, ketoneZone, mealForHour, mealTotals, tierInfo } from '../lib/nutrition';
 import { addDays, formatLong, isToday, todayStr } from '../lib/date';
@@ -7,15 +7,17 @@ import { MEALS, uid } from '../types';
 import type { Activity, DayLog, Entry, Favorite, Meal, Settings } from '../types';
 import type { AddEntryRequest } from './AddEntrySheet';
 
-export function Today({ day, settings, streak, onChangeDay, onSelectDate, onAdd, onQuickAdd, onCheckin }: {
+export function Today({ day, settings, streak, weekReviewDue, onChangeDay, onSelectDate, onAdd, onQuickAdd, onCheckin, onOpenTrends }: {
   day: DayLog;
   settings: Settings;
   streak: number;
+  weekReviewDue: boolean;
   onChangeDay: (fn: (d: DayLog) => DayLog) => void;
   onSelectDate: (date: string) => void;
   onAdd: (req: AddEntryRequest) => void;
   onQuickAdd: (fav: Favorite, meal: Meal) => void;
   onCheckin: () => void;
+  onOpenTrends: () => void;
 }) {
   const t = dayTotals(day);
   const today = isToday(day.date);
@@ -70,6 +72,13 @@ export function Today({ day, settings, streak, onChangeDay, onSelectDate, onAdd,
           )}
         </div>
       </Card>
+
+      {today && weekReviewDue && (
+        <button className="week-banner" onClick={onOpenTrends}>
+          <TrendingUp size={20} />
+          <span><strong>Your week in review is ready.</strong><br /><span className="muted">Days on plan, carbs, weight, and a card to share.</span></span>
+        </button>
+      )}
 
       {settings.favorites.length > 0 && (
         <section>

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Sheet, Chips, Stepper } from '../components/ui';
+import { suggestFoods } from '../lib/foods';
+import type { FoodSuggestion } from '../lib/foods';
 import { defaultTier, tierInfo, tiersFor, valueUnit } from '../lib/nutrition';
 import { MEALS, uid } from '../types';
 import type { Entry, EntryKind, Favorite, Meal, Tier } from '../types';
@@ -19,15 +21,17 @@ const KINDS: { key: EntryKind; label: string }[] = [
 
 interface FormProps {
   request: AddEntryRequest;
+  foodIndex: FoodSuggestion[];
   onClose: () => void;
   onSave: (entry: Entry) => void;
   onSaveFavorite: (fav: Favorite) => void;
 }
 
-export function AddEntrySheet({ request, formKey, onClose, onSave, onSaveFavorite }: {
+export function AddEntrySheet({ request, formKey, foodIndex, onClose, onSave, onSaveFavorite }: {
   request: AddEntryRequest | null;
   /** Changes on every open so the form starts fresh. */
   formKey: number;
+  foodIndex: FoodSuggestion[];
   onClose: () => void;
   onSave: (entry: Entry) => void;
   onSaveFavorite: (fav: Favorite) => void;
@@ -35,12 +39,12 @@ export function AddEntrySheet({ request, formKey, onClose, onSave, onSaveFavorit
   const mealLabel = request ? MEALS.find(m => m.key === (request.editing?.meal ?? request.meal))?.label.toLowerCase() : '';
   return (
     <Sheet open={!!request} onClose={onClose} title={request?.editing ? 'Edit entry' : `Add to ${mealLabel}`}>
-      {request && <EntryForm key={formKey} request={request} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
+      {request && <EntryForm key={formKey} request={request} foodIndex={foodIndex} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
     </Sheet>
   );
 }
 
-function EntryForm({ request, onClose, onSave, onSaveFavorite }: FormProps) {
+function EntryForm({ request, foodIndex, onClose, onSave, onSaveFavorite }: FormProps) {
   const src = request.editing ?? request.favorite;
   const initialKind: EntryKind = src?.kind ?? request.kind ?? 'protein';
   const [kind, setKind] = useState<EntryKind>(initialKind);
@@ -51,6 +55,19 @@ function EntryForm({ request, onClose, onSave, onSaveFavorite }: FormProps) {
   const [valueTouched, setValueTouched] = useState(!!src);
   const [meal, setMeal] = useState<Meal>(request.editing?.meal ?? request.meal);
   const [favorite, setFavorite] = useState(false);
+  const [picked, setPicked] = useState<string | null>(src ? `${src.kind}:${src.name}` : null);
+
+  const suggestions = useMemo(() => (request.editing ? [] : suggestFoods(foodIndex, kind, name, name.trim() ? 5 : 6)), [foodIndex, kind, name, request.editing]);
+  const showSuggestions = suggestions.length > 0 && picked !== `${kind}:${name}`;
+
+  const pickSuggestion = (f: FoodSuggestion) => {
+    setName(f.name);
+    setTier(f.tier ?? defaultTier(f.kind));
+    setAmount(f.amount);
+    setValue(f.value);
+    setValueTouched(true);
+    setPicked(`${f.kind}:${f.name}`);
+  };
 
   const info = tierInfo(tier);
   const computed = useMemo(() => (info ? Math.round(info.perUnit * amount) : 0), [info, amount]);
@@ -96,10 +113,21 @@ function EntryForm({ request, onClose, onSave, onSaveFavorite }: FormProps) {
         ))}
       </div>
 
-      <label className="field">
-        <span className="field-label">Food</span>
-        <input className="input" placeholder={kind === 'protein' ? 'Grilled chicken' : kind === 'carb' ? 'Broccoli' : 'Olive oil'} value={name} onChange={e => setName(e.target.value)} autoFocus={!request.editing} />
-      </label>
+      <div className="field">
+        <label className="field-label" htmlFor="food-name">Food</label>
+        <input id="food-name" className="input" placeholder={kind === 'protein' ? 'Grilled chicken' : kind === 'carb' ? 'Broccoli' : 'Olive oil'} value={name} onChange={e => { setName(e.target.value); setPicked(null); }} autoFocus={!request.editing} autoComplete="off" />
+        {showSuggestions && (
+          <div className="suggestions" role="listbox" aria-label={name.trim() ? 'Matching foods' : 'Recent foods'}>
+            {!name.trim() && <span className="suggestions-label">Recent</span>}
+            {suggestions.map(f => (
+              <button key={f.key} role="option" aria-selected={false} className="suggestion" onClick={() => pickSuggestion(f)}>
+                <span className="suggestion-name">{f.name}</span>
+                <span className="suggestion-meta">{f.tier ? `${f.tier} · ` : ''}{f.amount} {f.unit}{f.unit === 'serving' && f.amount !== 1 ? 's' : ''} · {f.value} {valueUnit(f.kind)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="field">
         <span className="field-label">{kind === 'protein' ? 'Protein type' : kind === 'carb' ? 'Carb type' : 'Type'}</span>
