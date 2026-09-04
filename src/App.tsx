@@ -9,6 +9,8 @@ import { Checkin } from './screens/Checkin';
 import { Trends } from './screens/Trends';
 import { History } from './screens/History';
 import { SettingsScreen } from './screens/Settings';
+import { Onboarding } from './screens/Onboarding';
+import { requestReview, syncReminders } from './lib/native';
 import { ensureToday, loadAllDays, loadSettings, migrateLegacy, saveDay, saveSettings } from './storage';
 import { dayStatus, dayTotals } from './lib/nutrition';
 import { addDays, daysInMonth, formatLong, formatMonthYear, toDateStr, todayStr } from './lib/date';
@@ -20,7 +22,7 @@ export default function App() {
   const [days, setDays] = useState<Record<string, DayLog>>({});
   const [loaded, setLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr());
-  const [view, setView] = useState<View>('today');
+  const [view, setView] = useState<View>(() => (loadSettings().onboardedAt ? 'today' : 'onboarding'));
   const [addReq, setAddReq] = useState<AddEntryRequest | null>(null);
   const [addSeq, setAddSeq] = useState(0);
   const [printMonth, setPrintMonth] = useState<{ year: number; month: number } | null>(null);
@@ -35,7 +37,18 @@ export default function App() {
         return next;
       });
     }
-    setDays(ensureToday(loadAllDays()));
+    const all = loadAllDays();
+    setDays(ensureToday(all));
+    // Existing users who already have journals skip the welcome flow.
+    if (Object.keys(all).length > 0) {
+      setSettings(s => {
+        if (s.onboardedAt) return s;
+        const next = { ...s, onboardedAt: Date.now() };
+        saveSettings(next);
+        return next;
+      });
+      setView('today');
+    }
     setLoaded(true);
   }, []);
 
@@ -60,7 +73,32 @@ export default function App() {
     });
   }, []);
 
-  const changeSettings = (s: Settings) => { setSettings(s); saveSettings(s); };
+  const loggedToday = (days[todayStr()]?.entries.length ?? 0) > 0;
+  const loggedDayCount = useMemo(() => Object.values(days).filter(d => d.entries.length > 0).length, [days]);
+
+  const changeSettings = (s: Settings) => {
+    setSettings(s);
+    saveSettings(s);
+    void syncReminders(s.reminders, loggedToday);
+  };
+
+  // Keep the evening nudge from firing on a day that already has food logged.
+  useEffect(() => {
+    if (!loaded || !settings.onboardedAt) return;
+    void syncReminders(settings.reminders, loggedToday);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedToday, loaded]);
+
+  // Ask for an App Store rating once, after a week of real use.
+  useEffect(() => {
+    if (!loaded || settings.reviewRequestedAt || loggedDayCount < 7) return;
+    const next = { ...settings, reviewRequestedAt: Date.now() };
+    setSettings(next);
+    saveSettings(next);
+    const t = setTimeout(() => { void requestReview(); }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedDayCount, loaded]);
 
   const streak = useMemo(() => {
     let n = 0;
@@ -110,6 +148,10 @@ export default function App() {
   }, [printMonth]);
 
   if (!loaded) return null;
+
+  if (view === 'onboarding') {
+    return <Onboarding settings={settings} onDone={s => { changeSettings(s); setView('today'); }} />;
+  }
 
   return (
     <div className="app">

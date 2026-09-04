@@ -33,7 +33,7 @@ function dayKey(date: string) {
 
 export function loadSettings(): Settings {
   const s = read<Partial<Settings>>(KEY_SETTINGS);
-  return { ...DEFAULT_SETTINGS, ...(s ?? {}), favorites: s?.favorites ?? [] };
+  return { ...DEFAULT_SETTINGS, ...(s ?? {}), favorites: s?.favorites ?? [], reminders: { ...DEFAULT_SETTINGS.reminders, ...(s?.reminders ?? {}) } };
 }
 
 export function saveSettings(s: Settings) {

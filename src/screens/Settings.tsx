@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Card, Segmented } from '../components/ui';
 import { exportBackup, importBackup } from '../storage';
+import { isNative } from '../lib/native';
 import type { KetoneMethod, Settings as SettingsData, WeightUnit } from '../types';
 
 export function SettingsScreen({ settings, onChange, onDataChanged }: {
@@ -87,6 +88,25 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
           <span>Weight unit</span>
           <Segmented<WeightUnit> options={[{ key: 'lb', label: 'lb' }, { key: 'kg', label: 'kg' }]} value={settings.weightUnit} onChange={v => onChange({ ...settings, weightUnit: v })} size="sm" />
         </div>
+      </Card>
+
+      <Card>
+        <span className="row-title">Reminders</span>
+        {!isNative() && <p className="field-help">Reminders are delivered by the iPhone and iPad app, not the web version.</p>}
+        <label className="setting-row">
+          <span>Morning check-in</span>
+          <span className="setting-input">
+            <input className="input input-time" type="time" value={settings.reminders.morningTime} onChange={e => onChange({ ...settings, reminders: { ...settings.reminders, morningTime: e.target.value || '07:30' } })} />
+            <input type="checkbox" className="toggle" checked={settings.reminders.morning} onChange={e => onChange({ ...settings, reminders: { ...settings.reminders, morning: e.target.checked } })} />
+          </span>
+        </label>
+        <label className="setting-row">
+          <span>Evening nudge<br /><span className="muted">only if nothing was logged</span></span>
+          <span className="setting-input">
+            <input className="input input-time" type="time" value={settings.reminders.eveningTime} onChange={e => onChange({ ...settings, reminders: { ...settings.reminders, eveningTime: e.target.value || '19:30' } })} />
+            <input type="checkbox" className="toggle" checked={settings.reminders.evening} onChange={e => onChange({ ...settings, reminders: { ...settings.reminders, evening: e.target.checked } })} />
+          </span>
+        </label>
       </Card>
 
       <Card>

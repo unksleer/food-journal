@@ -55,6 +55,13 @@ export interface Favorite {
   value: number;
 }
 
+export interface Reminders {
+  morning: boolean;
+  morningTime: string;
+  evening: boolean;
+  eveningTime: string;
+}
+
 export interface Settings {
   proteinGoal: number;
   carbLimit: number;
@@ -62,9 +69,12 @@ export interface Settings {
   weightUnit: WeightUnit;
   ketoneMethod: KetoneMethod;
   favorites: Favorite[];
+  reminders: Reminders;
+  onboardedAt?: number;
+  reviewRequestedAt?: number;
 }
 
-export type View = 'today' | 'trends' | 'history' | 'settings' | 'checkin';
+export type View = 'today' | 'trends' | 'history' | 'settings' | 'checkin' | 'onboarding';
 
 export const MEALS: { key: Meal; label: string }[] = [
   { key: 'B', label: 'Breakfast' },
@@ -84,6 +94,7 @@ export const DEFAULT_SETTINGS: Settings = {
   weightUnit: 'lb',
   ketoneMethod: 'blood',
   favorites: [],
+  reminders: { morning: false, morningTime: '07:30', evening: false, eveningTime: '19:30' },
 };
 
 export function uid(): string {

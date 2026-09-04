@@ -15,7 +15,9 @@
     "electron:build": "npm run build && electron-builder -c.mac.identity=null"
   },
   "dependencies": {
+    "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor/core": "^8.1.0",
+    "@capacitor/local-notifications": "^8.3.1",
     "@capgo/capacitor-printer": "^8.0.10",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",
