@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, emptyDay, uid } from './types';
+import { DEFAULT_INTEGRATIONS, DEFAULT_SETTINGS, emptyDay, uid } from './types';
 import type { DayLog, Entry, Meal, Settings, Tier } from './types';
 import { mealForHour } from './lib/nutrition';
 import { todayStr } from './lib/date';
@@ -33,7 +33,13 @@ function dayKey(date: string) {
 
 export function loadSettings(): Settings {
   const s = read<Partial<Settings>>(KEY_SETTINGS);
-  return { ...DEFAULT_SETTINGS, ...(s ?? {}), favorites: s?.favorites ?? [], reminders: { ...DEFAULT_SETTINGS.reminders, ...(s?.reminders ?? {}) } };
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(s ?? {}),
+    favorites: s?.favorites ?? [],
+    reminders: { ...DEFAULT_SETTINGS.reminders, ...(s?.reminders ?? {}) },
+    integrations: { ...DEFAULT_INTEGRATIONS, ...(s?.integrations ?? {}) },
+  };
 }
 
 export function saveSettings(s: Settings) {
@@ -50,7 +56,16 @@ export function loadAllDays(): Record<string, DayLog> {
   return out;
 }
 
-export function saveDay(day: DayLog) {
+/** Called after every local day write so integrations (iCloud, widget) can react. */
+export type DayWriteListener = (day: DayLog, source: 'local' | 'remote') => void;
+const dayListeners = new Set<DayWriteListener>();
+export function onDayWrite(fn: DayWriteListener): () => void {
+  dayListeners.add(fn);
+  return () => { dayListeners.delete(fn); };
+}
+
+export function saveDay(day: DayLog, source: 'local' | 'remote' = 'local') {
+  if (source === 'local') day = { ...day, updatedAt: Date.now() };
   const index = new Set(read<string[]>(KEY_INDEX) ?? []);
   const isEmpty =
     day.entries.length === 0 && day.water === 0 && day.activities.length === 0 && !day.notes &&
@@ -64,6 +79,12 @@ export function saveDay(day: DayLog) {
     index.add(day.date);
     write(KEY_INDEX, [...index].sort());
   }
+  for (const fn of dayListeners) fn(day, source);
+}
+
+export function loadDay(date: string): DayLog | undefined {
+  const d = read<DayLog>(dayKey(date));
+  return d ? normalizeDay(d) : undefined;
 }
 
 function normalizeDay(d: Partial<DayLog> & { date: string }): DayLog {

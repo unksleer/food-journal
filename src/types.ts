@@ -43,6 +43,8 @@ export interface DayLog {
   activities: Activity[];
   notes: string;
   checkin: Checkin;
+  /** Last local edit, used to resolve iCloud conflicts (newest wins). */
+  updatedAt?: number;
 }
 
 export interface Favorite {
@@ -62,6 +64,24 @@ export interface Reminders {
   eveningTime: string;
 }
 
+export interface Integrations {
+  icloud: boolean;
+  health: boolean;
+  healthWriteWeight: boolean;
+  healthReadActivity: boolean;
+  barcode: boolean;
+  widget: boolean;
+}
+
+export const DEFAULT_INTEGRATIONS: Integrations = {
+  icloud: false,
+  health: false,
+  healthWriteWeight: true,
+  healthReadActivity: true,
+  barcode: false,
+  widget: false,
+};
+
 export interface Settings {
   proteinGoal: number;
   carbLimit: number;
@@ -70,8 +90,11 @@ export interface Settings {
   ketoneMethod: KetoneMethod;
   favorites: Favorite[];
   reminders: Reminders;
+  integrations: Integrations;
   onboardedAt?: number;
   reviewRequestedAt?: number;
+  /** Bumped on every targets/favorites change, for iCloud conflict resolution. */
+  settingsUpdatedAt?: number;
 }
 
 export type View = 'today' | 'trends' | 'history' | 'settings' | 'checkin' | 'onboarding';
@@ -95,6 +118,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ketoneMethod: 'blood',
   favorites: [],
   reminders: { morning: false, morningTime: '07:30', evening: false, eveningTime: '19:30' },
+  integrations: DEFAULT_INTEGRATIONS,
 };
 
 export function uid(): string {

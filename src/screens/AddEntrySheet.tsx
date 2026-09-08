@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { ScanBarcode } from 'lucide-react';
+import { lookupBarcode, scanBarcode } from '../lib/barcode';
+import { isNative } from '../lib/native';
 import { Sheet, Chips, Stepper } from '../components/ui';
 import { suggestFoods } from '../lib/foods';
 import type { FoodSuggestion } from '../lib/foods';
@@ -22,16 +25,18 @@ const KINDS: { key: EntryKind; label: string }[] = [
 interface FormProps {
   request: AddEntryRequest;
   foodIndex: FoodSuggestion[];
+  barcodeEnabled: boolean;
   onClose: () => void;
   onSave: (entry: Entry) => void;
   onSaveFavorite: (fav: Favorite) => void;
 }
 
-export function AddEntrySheet({ request, formKey, foodIndex, onClose, onSave, onSaveFavorite }: {
+export function AddEntrySheet({ request, formKey, foodIndex, barcodeEnabled, onClose, onSave, onSaveFavorite }: {
   request: AddEntryRequest | null;
   /** Changes on every open so the form starts fresh. */
   formKey: number;
   foodIndex: FoodSuggestion[];
+  barcodeEnabled: boolean;
   onClose: () => void;
   onSave: (entry: Entry) => void;
   onSaveFavorite: (fav: Favorite) => void;
@@ -39,12 +44,12 @@ export function AddEntrySheet({ request, formKey, foodIndex, onClose, onSave, on
   const mealLabel = request ? MEALS.find(m => m.key === (request.editing?.meal ?? request.meal))?.label.toLowerCase() : '';
   return (
     <Sheet open={!!request} onClose={onClose} title={request?.editing ? 'Edit entry' : `Add to ${mealLabel}`}>
-      {request && <EntryForm key={formKey} request={request} foodIndex={foodIndex} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
+      {request && <EntryForm key={formKey} request={request} foodIndex={foodIndex} barcodeEnabled={barcodeEnabled} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
     </Sheet>
   );
 }
 
-function EntryForm({ request, foodIndex, onClose, onSave, onSaveFavorite }: FormProps) {
+function EntryForm({ request, foodIndex, barcodeEnabled, onClose, onSave, onSaveFavorite }: FormProps) {
   const src = request.editing ?? request.favorite;
   const initialKind: EntryKind = src?.kind ?? request.kind ?? 'protein';
   const [kind, setKind] = useState<EntryKind>(initialKind);
@@ -56,6 +61,31 @@ function EntryForm({ request, foodIndex, onClose, onSave, onSaveFavorite }: Form
   const [meal, setMeal] = useState<Meal>(request.editing?.meal ?? request.meal);
   const [favorite, setFavorite] = useState(false);
   const [picked, setPicked] = useState<string | null>(src ? `${src.kind}:${src.name}` : null);
+  const [scanMsg, setScanMsg] = useState('');
+  const [scanning, setScanning] = useState(false);
+
+  const scan = async () => {
+    setScanMsg('');
+    setScanning(true);
+    try {
+      const code = await scanBarcode();
+      if (!code) { setScanMsg('No barcode read.'); return; }
+      const food = await lookupBarcode(code);
+      if (!food) { setScanMsg(`Barcode ${code} is not in the database yet. Enter the carbs from the label.`); return; }
+      setName(food.brand ? `${food.name} (${food.brand})` : food.name);
+      setTier('G');
+      setAmount(1);
+      setValue(Math.round(food.netCarbs));
+      setValueTouched(true);
+      setPicked(`carb:${food.name}`);
+      setScanMsg(food.perServing ? `${food.netCarbs} g net carbs per serving${food.servingSize ? ` (${food.servingSize})` : ''}, from the label.` : `${food.netCarbs} g net carbs per 100 g. Adjust the amount to your portion.`);
+    } catch (err) {
+      console.warn(err);
+      setScanMsg('Could not look that up. Check your connection and try again.');
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const suggestions = useMemo(() => (request.editing ? [] : suggestFoods(foodIndex, kind, name, name.trim() ? 5 : 6)), [foodIndex, kind, name, request.editing]);
   const showSuggestions = suggestions.length > 0 && picked !== `${kind}:${name}`;
@@ -116,6 +146,10 @@ function EntryForm({ request, foodIndex, onClose, onSave, onSaveFavorite }: Form
       <div className="field">
         <label className="field-label" htmlFor="food-name">Food</label>
         <input id="food-name" className="input" placeholder={kind === 'protein' ? 'Grilled chicken' : kind === 'carb' ? 'Broccoli' : 'Olive oil'} value={name} onChange={e => { setName(e.target.value); setPicked(null); }} autoFocus={!request.editing} autoComplete="off" />
+        {kind === 'carb' && barcodeEnabled && isNative() && !request.editing && (
+          <button className="scan-btn" onClick={scan} disabled={scanning}><ScanBarcode size={18} /> {scanning ? 'Scanning…' : 'Scan barcode'}</button>
+        )}
+        {scanMsg && <p className="field-help">{scanMsg}</p>}
         {showSuggestions && (
           <div className="suggestions" role="listbox" aria-label={name.trim() ? 'Matching foods' : 'Recent foods'}>
             {!name.trim() && <span className="suggestions-label">Recent</span>}

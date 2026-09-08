@@ -6,12 +6,14 @@ import { addDays, formatLong, isToday, todayStr } from '../lib/date';
 import { MEALS, uid } from '../types';
 import type { Activity, DayLog, Entry, Favorite, Meal, Settings } from '../types';
 import type { AddEntryRequest } from './AddEntrySheet';
+import type { HealthActivity } from '../lib/health';
 
-export function Today({ day, settings, streak, weekReviewDue, onChangeDay, onSelectDate, onAdd, onQuickAdd, onCheckin, onOpenTrends }: {
+export function Today({ day, settings, streak, weekReviewDue, healthActivity, onChangeDay, onSelectDate, onAdd, onQuickAdd, onCheckin, onOpenTrends }: {
   day: DayLog;
   settings: Settings;
   streak: number;
   weekReviewDue: boolean;
+  healthActivity?: HealthActivity | null;
   onChangeDay: (fn: (d: DayLog) => DayLog) => void;
   onSelectDate: (date: string) => void;
   onAdd: (req: AddEntryRequest) => void;
@@ -135,6 +137,13 @@ export function Today({ day, settings, streak, weekReviewDue, onChangeDay, onSel
 
       <Card className="activity-card">
         <div className="row-title-line"><ActivityIcon size={18} /> <span className="row-title">Activity</span></div>
+        {healthActivity && (healthActivity.steps > 0 || healthActivity.workouts.length > 0) && (
+          <div className="health-line">
+            <span className="health-source">Apple Health</span>
+            <span>{healthActivity.steps > 0 ? `${healthActivity.steps.toLocaleString()} steps` : ''}{healthActivity.steps > 0 && healthActivity.activeKcal > 0 ? ' · ' : ''}{healthActivity.activeKcal > 0 ? `${healthActivity.activeKcal} active kcal` : ''}</span>
+            {healthActivity.workouts.map((w, i) => <span key={i}>{w.type} {w.minutes} min{w.kcal ? ` · ${w.kcal} kcal` : ''}</span>)}
+          </div>
+        )}
         {day.activities.map(a => (
           <div key={a.id} className="activity-row">
             <span className="activity-type">{a.type}</span>

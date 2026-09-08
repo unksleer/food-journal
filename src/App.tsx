@@ -12,7 +12,11 @@ import { SettingsScreen } from './screens/Settings';
 import { Onboarding } from './screens/Onboarding';
 import { requestReview, syncReminders } from './lib/native';
 import { buildFoodIndex } from './lib/foods';
-import { ensureToday, loadAllDays, loadSettings, migrateLegacy, saveDay, saveSettings } from './storage';
+import { applyRemoteChanges, fullSync, onRemoteChange, pushDay, pushSettings } from './lib/cloudSync';
+import { readHealthActivity, writeWeightToHealth } from './lib/health';
+import type { HealthActivity } from './lib/health';
+import { pushWidget, widgetSnapshot } from './lib/widget';
+import { ensureToday, loadAllDays, loadSettings, migrateLegacy, onDayWrite, saveDay, saveSettings } from './storage';
 import { dayStatus, dayTotals } from './lib/nutrition';
 import { addDays, daysInMonth, formatLong, formatMonthYear, toDateStr, todayStr } from './lib/date';
 import { emptyDay, MEALS, uid } from './types';
@@ -27,6 +31,7 @@ export default function App() {
   const [addReq, setAddReq] = useState<AddEntryRequest | null>(null);
   const [addSeq, setAddSeq] = useState(0);
   const [printMonth, setPrintMonth] = useState<{ year: number; month: number } | null>(null);
+  const [healthActivity, setHealthActivity] = useState<HealthActivity | null>(null);
 
   // Load + one-time migration from v3.1 storage
   useEffect(() => {
@@ -85,10 +90,41 @@ export default function App() {
   const loggedDayCount = useMemo(() => Object.values(days).filter(d => d.entries.length > 0).length, [days]);
 
   const changeSettings = (s: Settings) => {
-    setSettings(s);
-    saveSettings(s);
-    void syncReminders(s.reminders, loggedToday);
+    const targetsChanged = s.proteinGoal !== settings.proteinGoal || s.carbLimit !== settings.carbLimit || s.waterGoal !== settings.waterGoal ||
+      s.weightUnit !== settings.weightUnit || s.ketoneMethod !== settings.ketoneMethod || s.favorites !== settings.favorites;
+    const next = targetsChanged ? { ...s, settingsUpdatedAt: Date.now() } : s;
+    setSettings(next);
+    saveSettings(next);
+    void syncReminders(next.reminders, loggedToday);
+    if (next.integrations.icloud && targetsChanged) void pushSettings(next);
   };
+
+  // iCloud: push local edits, pull other devices' edits, resync on foreground.
+  const cloudOn = settings.integrations.icloud;
+  useEffect(() => {
+    if (!loaded || !cloudOn) return;
+    const offWrite = onDayWrite((day, source) => { if (source === 'local') void pushDay(day); });
+    const offRemote = onRemoteChange(keys => {
+      void applyRemoteChanges(keys).then(changed => {
+        if (changed.length === 0) return;
+        setDays(ensureToday(loadAllDays()));
+        if (changed.includes('settings')) setSettings(loadSettings());
+      });
+    });
+    const resync = () => { void fullSync().then(r => { if (r.pulled > 0) { setDays(ensureToday(loadAllDays())); setSettings(loadSettings()); } }); };
+    window.addEventListener('focus', resync);
+    resync();
+    return () => { offWrite(); offRemote(); window.removeEventListener('focus', resync); };
+  }, [loaded, cloudOn]);
+
+  // Apple Health: steps and workouts for the day being viewed.
+  const healthRead = settings.integrations.health && settings.integrations.healthReadActivity;
+  useEffect(() => {
+    if (!loaded || !healthRead || view !== 'today') { setHealthActivity(null); return; }
+    let cancelled = false;
+    void readHealthActivity(selectedDate).then(a => { if (!cancelled) setHealthActivity(a); });
+    return () => { cancelled = true; };
+  }, [loaded, healthRead, view, selectedDate]);
 
   // Keep the evening nudge from firing on a day that already has food logged.
   useEffect(() => {
@@ -118,6 +154,15 @@ export default function App() {
     return n;
   }, [days, settings]);
 
+  // Widget: keep today's numbers fresh whenever today changes.
+  const widgetOn = settings.integrations.widget;
+  const todayLog = days[todayStr()];
+  useEffect(() => {
+    if (!loaded || !widgetOn || !todayLog) return;
+    void pushWidget(widgetSnapshot(todayLog, settings, streak));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, widgetOn, todayLog, settings.proteinGoal, settings.carbLimit, streak]);
+
   const previousWeight = useMemo(() => {
     const dates = Object.keys(days).filter(d => d < selectedDate && typeof days[d].checkin.weight === 'number').sort();
     return dates.length ? days[dates[dates.length - 1]].checkin.weight : undefined;
@@ -135,7 +180,12 @@ export default function App() {
     changeSettings({ ...settings, favorites: [...settings.favorites, fav].slice(-12) });
   };
 
-  const saveCheckin = (c: CheckinData) => updateDay(selectedDate, d => ({ ...d, checkin: c }));
+  const saveCheckin = (c: CheckinData) => {
+    updateDay(selectedDate, d => ({ ...d, checkin: c }));
+    if (settings.integrations.health && settings.integrations.healthWriteWeight && typeof c.weight === 'number') {
+      void writeWeightToHealth(c.weight, settings.weightUnit, selectedDate);
+    }
+  };
 
   const openDay = (date: string) => { setSelectedDate(date); setView('today'); window.scrollTo({ top: 0 }); };
 
@@ -170,6 +220,7 @@ export default function App() {
             settings={settings}
             streak={streak}
             weekReviewDue={weekReviewDue}
+            healthActivity={healthActivity}
             onChangeDay={fn => updateDay(selectedDate, fn)}
             onSelectDate={setSelectedDate}
             onAdd={req => { setAddReq(req); setAddSeq(n => n + 1); }}
@@ -190,7 +241,7 @@ export default function App() {
 
       <TabBar view={view} onChange={v => { setView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
 
-      <AddEntrySheet request={addReq} formKey={addSeq} foodIndex={foodIndex} onClose={() => setAddReq(null)} onSave={saveEntry} onSaveFavorite={saveFavorite} />
+      <AddEntrySheet request={addReq} formKey={addSeq} foodIndex={foodIndex} barcodeEnabled={settings.integrations.barcode} onClose={() => setAddReq(null)} onSave={saveEntry} onSaveFavorite={saveFavorite} />
 
       {printMonth && <MonthPrint days={days} settings={settings} year={printMonth.year} month={printMonth.month} />}
     </div>
