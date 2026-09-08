@@ -27,7 +27,7 @@ The optional integrations under Settings need Apple entitlements, which Xcode re
 2. **HealthKit**. Powers "Apple Health".
 3. **App Groups** → add `group.com.leeunks.ketojournal`. Powers the home-screen widget.
 
-For the widget itself, once: **File → New → Target → Widget Extension**, product name `FuelWidget`, uncheck "Include Configuration App Intent", finish, then replace the generated `FuelWidget.swift` with `ios/FuelWidget/FuelWidget.swift` from this repo and add the same App Group to the `FuelWidget` target. Set the widget target's minimum iOS to 15.5 if Xcode chose higher and you want to match the app.
+The widget lives in its own target, `FuelWidgetExtension` (`ios/App/FuelWidget/`), already wired into the project and embedded in the app. If Xcode complains about signing for it, select that target and repeat the App Groups step for it.
 
 The barcode scanner needs no entitlement, only the camera usage string already in `Info.plist`.
 
@@ -41,7 +41,7 @@ The barcode scanner needs no entitlement, only the camera usage string already i
 - `src/lib/cloudSync.ts` + `ios/App/App/CloudKVPlugin.swift` — iCloud key-value sync, newest edit wins
 - `src/lib/health.ts` — Apple Health: writes check-in weight, reads steps and workouts
 - `src/lib/barcode.ts` — camera scan plus Open Food Facts lookup for net carbs
-- `src/lib/widget.ts` + `ios/App/App/WidgetBridgePlugin.swift` + `ios/FuelWidget/` — home-screen widget data and SwiftUI views
+- `src/lib/widget.ts` + `ios/App/App/WidgetBridgePlugin.swift` + `ios/App/FuelWidget/` — home-screen widget data and SwiftUI views
 
 ## Data
 

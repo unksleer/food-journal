@@ -1,12 +1,8 @@
 import WidgetKit
 import SwiftUI
 
-// Home-screen widget for Fuel Tracker.
-//
-// Xcode setup (once): File > New > Target > Widget Extension, product name "FuelWidget",
-// leave "Include Configuration App Intent" unchecked, then replace the generated
-// FuelWidget.swift with this file and add the App Group "group.com.leeunks.ketojournal"
-// under Signing & Capabilities for BOTH the App target and the FuelWidget target.
+// Home-screen widget for Fuel Tracker. Built by the FuelWidgetExtension target, which reads
+// today's numbers from the App Group the app writes through WidgetBridgePlugin.
 
 private let appGroup = "group.com.leeunks.ketojournal"
 private let snapshotKey = "today"
@@ -36,20 +32,20 @@ struct Snapshot: Codable {
     }
 }
 
-struct Entry: TimelineEntry {
+struct FuelEntry: TimelineEntry {
     let date: Date
     let snapshot: Snapshot?
 }
 
 struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> Entry { Entry(date: Date(), snapshot: .placeholder) }
+    func placeholder(in context: Context) -> FuelEntry { FuelEntry(date: Date(), snapshot: .placeholder) }
 
-    func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) {
-        completion(Entry(date: Date(), snapshot: context.isPreview ? .placeholder : Snapshot.load()))
+    func getSnapshot(in context: Context, completion: @escaping (FuelEntry) -> Void) {
+        completion(FuelEntry(date: Date(), snapshot: context.isPreview ? .placeholder : Snapshot.load()))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
-        let entry = Entry(date: Date(), snapshot: Snapshot.load())
+    func getTimeline(in context: Context, completion: @escaping (Timeline<FuelEntry>) -> Void) {
+        let entry = FuelEntry(date: Date(), snapshot: Snapshot.load())
         // Refresh after midnight so a stale day shows as empty; the app reloads it on every log.
         let tomorrow = Calendar.current.startOfDay(for: Date()).addingTimeInterval(86_400 + 60)
         completion(Timeline(entries: [entry], policy: .after(tomorrow)))
@@ -91,7 +87,9 @@ struct SmallView: View {
             HStack {
                 Text("Protein \(s.proteinKcal)/\(s.proteinGoal)").font(.caption.weight(.semibold)).foregroundColor(muted)
                 Spacer()
-                if s.streak > 0 { Text("🔥\(s.streak)").font(.caption.weight(.bold)).foregroundColor(terracotta) }
+                if s.streak > 0 {
+                    HStack(spacing: 2) { Image(systemName: "flame.fill"); Text("\(s.streak)") }.font(.caption.weight(.bold)).foregroundColor(terracotta)
+                }
             }
         }
     }
@@ -125,7 +123,7 @@ struct MediumView: View {
     }
 }
 
-struct EmptyView: View {
+struct NothingLoggedView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Fuel Tracker").font(.headline).foregroundColor(ink)
@@ -137,14 +135,14 @@ struct EmptyView: View {
 
 struct FuelWidgetEntryView: View {
     @Environment(\.widgetFamily) var family
-    var entry: Entry
+    var entry: FuelEntry
 
     var body: some View {
         Group {
             if let s = entry.snapshot, s.isToday || s.updatedAt == 0 {
                 if family == .systemMedium { MediumView(s: s) } else { SmallView(s: s) }
             } else {
-                EmptyView()
+                NothingLoggedView()
             }
         }
         .padding(14)

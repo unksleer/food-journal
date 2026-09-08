@@ -26,9 +26,9 @@ If the simulator build fails on provisioning for entitlements, the capabilities 
 
 ## 2. Widget extension target
 
-This must be created in Xcode. Two options, try the first:
+The `FuelWidgetExtension` target is already defined in project.pbxproj (hand-written). If Xcode refuses to open the project or the target is broken, fall back to:
 
-a) Script it with Ruby `xcodeproj` gem if available (`gem list xcodeproj`), creating a `FuelWidget` Widget Extension target with `ios/FuelWidget/FuelWidget.swift` and an `Info.plist` carrying `NSExtension` → `NSExtensionPointIdentifier` = `com.apple.widgetkit-extension`, bundle id `com.leeunks.ketojournal.FuelWidget`, deployment target 15.5, App Group entitlement `group.com.leeunks.ketojournal`, and embed it in the App target (Embed Foundation Extensions build phase).
+a) Script it with Ruby `xcodeproj` gem if available (`gem list xcodeproj`), creating a `FuelWidget` Widget Extension target with `ios/App/FuelWidget/FuelWidget.swift` and an `Info.plist` carrying `NSExtension` → `NSExtensionPointIdentifier` = `com.apple.widgetkit-extension`, bundle id `com.leeunks.ketojournal.FuelWidget`, deployment target 15.5, App Group entitlement `group.com.leeunks.ketojournal`, and embed it in the App target (Embed Foundation Extensions build phase).
 
 b) If that is not feasible, write out the exact Xcode clicks for Lee and stop.
 
