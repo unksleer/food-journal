@@ -22,8 +22,16 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Fuel Tracker uses the camera to scan food barcodes and look up net carbs.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Fuel Tracker reads your steps and workouts so your activity appears in the journal.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Fuel Tracker saves the weight you enter at check-in to Apple Health.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
