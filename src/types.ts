@@ -93,6 +93,7 @@ export interface Settings {
   integrations: Integrations;
   onboardedAt?: number;
   reviewRequestedAt?: number;
+  proUnlocked?: boolean;
   /** Bumped on every targets/favorites change, for iCloud conflict resolution. */
   settingsUpdatedAt?: number;
 }

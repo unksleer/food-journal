@@ -18,6 +18,7 @@
 		7A1C0001FEE10001000A0001 /* CloudKVPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0002FEE10001000A0001 /* CloudKVPlugin.swift */; };
 		7A1C0003FEE10001000A0001 /* FuelTrackerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0004FEE10001000A0001 /* FuelTrackerViewController.swift */; };
 		7A1C0006FEE10001000A0001 /* WidgetBridgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0007FEE10001000A0001 /* WidgetBridgePlugin.swift */; };
+		7A1C0008FEE10001000A0001 /* StoreKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0009FEE10001000A0001 /* StoreKitPlugin.swift */; };
 		7A1C0101FEE10001000A0001 /* FuelWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C0102FEE10001000A0001 /* FuelWidget.swift */; };
 		7A1C0103FEE10001000A0001 /* FuelWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7A1C0104FEE10001000A0001 /* FuelWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -60,6 +61,7 @@
 		7A1C0004FEE10001000A0001 /* FuelTrackerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuelTrackerViewController.swift; sourceTree = "<group>"; };
 		7A1C0005FEE10001000A0001 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		7A1C0007FEE10001000A0001 /* WidgetBridgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgePlugin.swift; sourceTree = "<group>"; };
+		7A1C0009FEE10001000A0001 /* StoreKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPlugin.swift; sourceTree = "<group>"; };
 		7A1C0102FEE10001000A0001 /* FuelWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuelWidget.swift; sourceTree = "<group>"; };
 		7A1C0104FEE10001000A0001 /* FuelWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FuelWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A1C0107FEE10001000A0001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 				7A1C0002FEE10001000A0001 /* CloudKVPlugin.swift */,
 				7A1C0004FEE10001000A0001 /* FuelTrackerViewController.swift */,
 				7A1C0007FEE10001000A0001 /* WidgetBridgePlugin.swift */,
+				7A1C0009FEE10001000A0001 /* StoreKitPlugin.swift */,
 				7A1C0005FEE10001000A0001 /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -249,6 +252,7 @@
 				7A1C0001FEE10001000A0001 /* CloudKVPlugin.swift in Sources */,
 				7A1C0003FEE10001000A0001 /* FuelTrackerViewController.swift in Sources */,
 				7A1C0006FEE10001000A0001 /* WidgetBridgePlugin.swift in Sources */,
+				7A1C0008FEE10001000A0001 /* StoreKitPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -15,6 +15,7 @@ import { buildFoodIndex } from './lib/foods';
 import { applyRemoteChanges, fullSync, onRemoteChange, pushDay, pushSettings } from './lib/cloudSync';
 import { readHealthActivity, writeWeightToHealth } from './lib/health';
 import type { HealthActivity } from './lib/health';
+import { getProStatus } from './lib/storekit';
 import { pushWidget, widgetSnapshot } from './lib/widget';
 import { ensureToday, loadAllDays, loadSettings, migrateLegacy, onDayWrite, saveDay, saveSettings } from './storage';
 import { dayStatus, dayTotals } from './lib/nutrition';
@@ -45,16 +46,26 @@ export default function App() {
     }
     const all = loadAllDays();
     setDays(ensureToday(all));
-    // Existing users who already have journals skip the welcome flow.
+    // Existing users who already have journals skip the welcome flow and are grandfathered into Pro.
     if (Object.keys(all).length > 0) {
       setSettings(s => {
-        if (s.onboardedAt) return s;
-        const next = { ...s, onboardedAt: Date.now() };
+        if (s.onboardedAt && s.proUnlocked) return s;
+        const next = { ...s, onboardedAt: s.onboardedAt ?? Date.now(), proUnlocked: true };
         saveSettings(next);
         return next;
       });
       setView('today');
     }
+    void getProStatus().then(st => {
+      if (st.unlocked) {
+        setSettings(s => {
+          if (s.proUnlocked) return s;
+          const next = { ...s, proUnlocked: true };
+          saveSettings(next);
+          return next;
+        });
+      }
+    });
     setLoaded(true);
   }, []);
 

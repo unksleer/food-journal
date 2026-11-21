@@ -7,5 +7,6 @@ class FuelTrackerViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CloudKVPlugin())
         bridge?.registerPluginInstance(WidgetBridgePlugin())
+        bridge?.registerPluginInstance(StoreKitPlugin())
     }
 }

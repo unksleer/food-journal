@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Sparkles, Trash2 } from 'lucide-react';
 import { Card, Segmented } from '../components/ui';
 import { exportBackup, importBackup } from '../storage';
 import { isNative } from '../lib/native';
 import { cloudAvailable, fullSync } from '../lib/cloudSync';
 import { healthAvailable, requestHealthAccess } from '../lib/health';
+import { getProStatus, purchasePro, restorePro } from '../lib/storekit';
 import { clearWidget } from '../lib/widget';
 import type { Integrations } from '../types';
 import type { KetoneMethod, Settings as SettingsData, WeightUnit } from '../types';
@@ -19,6 +20,54 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
   const [showImport, setShowImport] = useState(false);
   const [intMsg, setIntMsg] = useState<Partial<Record<keyof Integrations, string>>>({});
   const [busy, setBusy] = useState<string>('');
+  const [proPrice, setProPrice] = useState<string>('$4.99');
+  const [proMsg, setProMsg] = useState<string>('');
+
+  useEffect(() => {
+    void (async () => {
+      const st = await getProStatus();
+      if (st.displayPrice) setProPrice(st.displayPrice);
+      if (st.unlocked && !settings.proUnlocked) {
+        onChange({ ...settings, proUnlocked: true });
+      }
+    })();
+  }, [settings, onChange]);
+
+  const handleBuyPro = async () => {
+    setBusy('pro');
+    setProMsg('');
+    try {
+      const res = await purchasePro();
+      if (res.unlocked) {
+        onChange({ ...settings, proUnlocked: true });
+        setProMsg('Fuel Tracker Pro unlocked forever. Thank you for supporting the app!');
+      } else if (res.pending) {
+        setProMsg('Purchase is pending approval.');
+      }
+    } catch (err) {
+      setProMsg((err as Error).message || 'Could not complete purchase right now.');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const handleRestorePro = async () => {
+    setBusy('pro');
+    setProMsg('');
+    try {
+      const res = await restorePro();
+      if (res.unlocked) {
+        onChange({ ...settings, proUnlocked: true });
+        setProMsg('Restored Fuel Tracker Pro.');
+      } else {
+        setProMsg('No previous Fuel Tracker Pro purchase found for this Apple Account.');
+      }
+    } catch (err) {
+      setProMsg((err as Error).message || 'Could not restore purchases right now.');
+    } finally {
+      setBusy('');
+    }
+  };
 
   const setIntegration = (patch: Partial<Integrations>) => onChange({ ...settings, integrations: { ...settings.integrations, ...patch } });
   const note = (k: keyof Integrations, text: string) => setIntMsg(m => ({ ...m, [k]: text }));
@@ -99,6 +148,36 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
           <h1 className="screen-title">Settings</h1>
         </div>
       </header>
+
+      <Card>
+        <div className="row-between">
+          <span className="row-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Sparkles size={18} style={{ color: '#c2410c' }} />
+            Fuel Tracker Pro
+          </span>
+          {settings.proUnlocked && <span className="status-pill st-on-plan">Lifetime Unlocked</span>}
+        </div>
+        {settings.proUnlocked ? (
+          <p className="field-help">
+            You have full lifetime access to Fuel Tracker Pro, including monthly clinic PDF exports, barcode scanning, iCloud sync, Apple Health, and Home Screen widgets.
+          </p>
+        ) : (
+          <>
+            <p className="field-help">
+              Unlock unlimited history, monthly clinic PDF printouts, barcode scanning, iCloud sync, Apple Health, and the Home Screen widget forever with a one-time purchase.
+            </p>
+            <div className="btn-row">
+              <button className="btn-primary" disabled={busy === 'pro'} onClick={() => void handleBuyPro()}>
+                {busy === 'pro' ? 'Working…' : `Unlock Lifetime Pro · ${proPrice}`}
+              </button>
+              <button className="btn-secondary" disabled={busy === 'pro'} onClick={() => void handleRestorePro()}>
+                Restore purchase
+              </button>
+            </div>
+          </>
+        )}
+        {proMsg && <p className="status-msg">{proMsg}</p>}
+      </Card>
 
       <Card>
         <span className="row-title">Daily targets</span>
