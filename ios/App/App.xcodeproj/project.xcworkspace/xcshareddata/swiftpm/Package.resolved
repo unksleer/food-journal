@@ -1,5 +1,5 @@
 {
-  "originHash" : "096452c6949310a36a745abf5beb640686d8ee80ee4aff7d43ed30aba4cb1dbf",
+  "originHash" : "49ae4e60cc5c453d88ebae775d535ff1a56c8f3716197597f52c9508218135c0",
   "pins" : [
     {
       "identity" : "capacitor-swift-pm",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "1f324fe7bdbdc8c5cc28bea48a231545a8c2e823",
         "version" : "8.1.0"
+      }
+    },
+    {
+      "identity" : "osbarcodelib-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OutSystems/OSBarcodeLib-iOS.git",
+      "state" : {
+        "revision" : "7f9d166289c10601bfbed95cd3ec56019870ce1b",
+        "version" : "2.2.1"
       }
     }
   ],
