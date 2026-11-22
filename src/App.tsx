@@ -186,7 +186,28 @@ export default function App() {
     return { ...d, entries: exists ? d.entries.map(e => (e.id === entry.id ? entry : e)) : [...d.entries, entry] };
   });
 
-  const quickAdd = (fav: Favorite, meal: Meal) => saveEntry({ id: uid(), kind: fav.kind, name: fav.name, tier: fav.tier, amount: fav.amount, unit: fav.unit, value: fav.value, meal, createdAt: Date.now() });
+  const isTrialExpiredForDate = (date: string) => {
+    if (settings.proUnlocked) return false;
+    const alreadyLoggedOnDate = (days[date]?.entries.length ?? 0) > 0;
+    return !alreadyLoggedOnDate && loggedDayCount >= 14;
+  };
+
+  const requestAddEntry = (req: AddEntryRequest) => {
+    if (!req.editing && isTrialExpiredForDate(selectedDate)) {
+      setProPromptReason('Your 14-day free trial is complete! Unlock Fuel Tracker Pro once ($4.99, no subscription) to keep logging unlimited days plus all clinic and device tools.');
+      return;
+    }
+    setAddReq(req);
+    setAddSeq(n => n + 1);
+  };
+
+  const quickAdd = (fav: Favorite, meal: Meal) => {
+    if (isTrialExpiredForDate(selectedDate)) {
+      setProPromptReason('Your 14-day free trial is complete! Unlock Fuel Tracker Pro once ($4.99, no subscription) to keep logging unlimited days plus all clinic and device tools.');
+      return;
+    }
+    saveEntry({ id: uid(), kind: fav.kind, name: fav.name, tier: fav.tier, amount: fav.amount, unit: fav.unit, value: fav.value, meal, createdAt: Date.now() });
+  };
 
   const saveFavorite = (fav: Favorite) => {
     if (settings.favorites.some(f => f.name.toLowerCase() === fav.name.toLowerCase() && f.kind === fav.kind)) return;
@@ -242,9 +263,15 @@ export default function App() {
             healthActivity={healthActivity}
             onChangeDay={fn => updateDay(selectedDate, fn)}
             onSelectDate={setSelectedDate}
-            onAdd={req => { setAddReq(req); setAddSeq(n => n + 1); }}
+            onAdd={requestAddEntry}
             onQuickAdd={quickAdd}
-            onCheckin={() => setView('checkin')}
+            onCheckin={() => {
+              if (isTrialExpiredForDate(selectedDate)) {
+                setProPromptReason('Your 14-day free trial is complete! Unlock Fuel Tracker Pro once ($4.99, no subscription) to keep logging unlimited days plus all clinic and device tools.');
+                return;
+              }
+              setView('checkin');
+            }}
             onOpenTrends={() => { setView('trends'); window.scrollTo({ top: 0 }); }}
           />
         )}
@@ -256,6 +283,7 @@ export default function App() {
         {view === 'settings' && (
           <SettingsScreen
             settings={settings}
+            loggedDayCount={loggedDayCount}
             onChange={changeSettings}
             onDataChanged={() => { setSettings(loadSettings()); setDays(ensureToday(loadAllDays())); }}
             onRequirePro={reason => setProPromptReason(reason)}

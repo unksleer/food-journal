@@ -43,14 +43,13 @@
    - **Price:** **$4.99 USD** (one-time purchase, no recurring subscription)
    - **Status:** **Approved & Live** (Approved Nov 22, 2026 alongside v1.1.1 Build 2).
 
-3. **v1.2.0 Feature Split (`427e340` — Free Core vs. $4.99 Pro Power Tools):**
-   - **Free Forever (Core Journal):**
-     - Daily VLP (35 cal/oz), LP (55 cal/oz), and MP (75 cal/oz) protein logging by the ounce
-     - Net carb & fat logging by the serving
-     - Recent food suggestions & Quick-Add favorites
-     - Morning check-in (weight, ketones via blood/breath/strips, energy, hunger, sleep)
-     - 7-day / 30-day Trends, shareable Week-in-Review card, full calendar History, and JSON backup/restore
+3. **v1.2.0 Feature Split (`14-Day Logged Trial` + `$4.99 Pro Power Tools`):**
+   - **14-Day Free Trial (Core Journal):**
+     - New users get **14 logged days** of full daily VLP (35 cal/oz), LP (55 cal/oz), and MP (75 cal/oz) protein logging by the ounce, net carb & fat logging, quick-add favorites, and morning weight/ketone check-ins for free.
+     - On Day 7 (`loggedDayCount >= 7`), the automatic 5-star App Store rating prompt fires while they are still inside their free trial.
+     - After 14 logged days (`loggedDayCount >= 14`), logging a new day prompts the `ProSheet` upgrade card ($4.99 one-time unlock). Past logged days, trends, history, and JSON export remain readable at all times.
    - **Fuel Tracker Pro ($4.99 Lifetime Unlock via `src/screens/ProSheet.tsx`):**
+     - **Unlimited Daily Logging** beyond the 14-day free trial
      - **Monthly Clinic PDF Printout** (`Export [Month] as PDF · Pro` on the History tab)
      - **Barcode Net-Carb Scanner** (`Scan barcode · Pro` on the Carbs food-entry sheet & Settings)
      - **Home Screen Widget** (carbs left, protein progress, and streak)

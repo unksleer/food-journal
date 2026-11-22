@@ -10,8 +10,9 @@ import { clearWidget } from '../lib/widget';
 import type { Integrations } from '../types';
 import type { KetoneMethod, Settings as SettingsData, WeightUnit } from '../types';
 
-export function SettingsScreen({ settings, onChange, onDataChanged, onRequirePro }: {
+export function SettingsScreen({ settings, loggedDayCount = 0, onChange, onDataChanged, onRequirePro }: {
   settings: SettingsData;
+  loggedDayCount?: number;
   onChange: (s: SettingsData) => void;
   onDataChanged: () => void;
   onRequirePro: (reason: string) => void;
@@ -159,16 +160,22 @@ export function SettingsScreen({ settings, onChange, onDataChanged, onRequirePro
             <Sparkles size={18} style={{ color: '#c2410c' }} />
             Fuel Tracker Pro
           </span>
-          {settings.proUnlocked && <span className="status-pill st-on-plan">Lifetime Unlocked</span>}
+          {settings.proUnlocked ? (
+            <span className="status-pill st-on-plan">Lifetime Unlocked</span>
+          ) : (
+            <span className="status-pill st-in-progress">
+              {loggedDayCount >= 14 ? '14-day trial complete' : `Free trial · ${Math.max(0, 14 - loggedDayCount)} days left`}
+            </span>
+          )}
         </div>
         {settings.proUnlocked ? (
           <p className="field-help">
-            You have full lifetime access to Fuel Tracker Pro, including monthly clinic PDF exports, barcode scanning, iCloud sync, Apple Health, and Home Screen widgets.
+            You have full lifetime access to Fuel Tracker Pro, including unlimited daily logging, monthly clinic PDF exports, barcode scanning, iCloud sync, Apple Health, and Home Screen widgets.
           </p>
         ) : (
           <>
             <p className="field-help">
-              Unlock unlimited history, monthly clinic PDF printouts, barcode scanning, iCloud sync, Apple Health, and the Home Screen widget forever with a one-time purchase.
+              Try daily logging free for 14 logged days. Unlock unlimited daily logging, monthly clinic PDF printouts, barcode scanning, iCloud sync, Apple Health, and the Home Screen widget forever with a one-time purchase.
             </p>
             <div className="btn-row">
               <button className="btn-primary" disabled={busy === 'pro'} onClick={() => void handleBuyPro()}>

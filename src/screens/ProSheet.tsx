@@ -4,11 +4,11 @@ import { Sheet } from '../components/ui';
 import { getProStatus, purchasePro, restorePro } from '../lib/storekit';
 
 const PRO_BENEFITS = [
+  { title: 'Unlimited Daily Journal (Beyond 14-Day Trial)', desc: 'Log VLP/LP/MP protein by the ounce, net carbs, fats, and morning check-ins forever with no subscriptions.' },
   { title: 'Monthly Clinic PDF Printout', desc: 'Export or print your clean monthly food, ketone, and weight summary for clinic weigh-in days.' },
   { title: 'Barcode Net-Carb Scanner', desc: 'Point your camera at any food label to pull in net carbs automatically.' },
   { title: 'Home Screen Widget', desc: 'See net carbs remaining, protein progress, and your streak right on your iPhone Home Screen.' },
-  { title: 'Apple Health Integration', desc: 'Automatically save check-in weight to Apple Health and display daily steps & workouts.' },
-  { title: 'iCloud Sync Across Devices', desc: 'Keep the same journal synced privately across your iPhone and iPad.' },
+  { title: 'Apple Health & iCloud Sync', desc: 'Save check-in weight to Apple Health, read steps & workouts, and sync privately across iPhone & iPad.' },
 ];
 
 export function ProSheet({ open, reason, onClose, onUnlocked }: {
@@ -86,7 +86,7 @@ export function ProSheet({ open, reason, onClose, onUnlocked }: {
         </p>
       )}
       <p className="field-help" style={{ marginTop: 0, marginBottom: 16 }}>
-        Daily VLP/LP/MP meal logging and morning check-ins are free forever. Unlock all clinic and device power tools with a single one-time purchase—no subscriptions.
+        Try daily VLP/LP/MP meal logging and morning check-ins free for 14 logged days. Unlock unlimited logging plus all clinic and device power tools with a single one-time purchase—no subscriptions.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
