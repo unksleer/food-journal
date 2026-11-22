@@ -10,10 +10,11 @@ import { clearWidget } from '../lib/widget';
 import type { Integrations } from '../types';
 import type { KetoneMethod, Settings as SettingsData, WeightUnit } from '../types';
 
-export function SettingsScreen({ settings, onChange, onDataChanged }: {
+export function SettingsScreen({ settings, onChange, onDataChanged, onRequirePro }: {
   settings: SettingsData;
   onChange: (s: SettingsData) => void;
   onDataChanged: () => void;
+  onRequirePro: (reason: string) => void;
 }) {
   const [msg, setMsg] = useState<string>('');
   const [importText, setImportText] = useState('');
@@ -74,6 +75,7 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
 
   const toggleCloud = async (on: boolean) => {
     if (!on) { setIntegration({ icloud: false }); note('icloud', 'Off. Your journal stays on this device.'); return; }
+    if (!settings.proUnlocked) { onRequirePro('iCloud Sync across iPhone & iPad is a Fuel Tracker Pro feature.'); return; }
     setBusy('icloud');
     const ok = await cloudAvailable();
     if (!ok) { setBusy(''); note('icloud', isNative() ? 'This iPhone is not signed in to iCloud, or iCloud Drive is off for this app in Settings.' : 'iCloud sync works in the iPhone and iPad app.'); return; }
@@ -86,6 +88,7 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
 
   const toggleHealth = async (on: boolean) => {
     if (!on) { setIntegration({ health: false }); note('health', 'Off.'); return; }
+    if (!settings.proUnlocked) { onRequirePro('Apple Health integration is a Fuel Tracker Pro feature.'); return; }
     setBusy('health');
     const avail = await healthAvailable();
     if (!avail) { setBusy(''); note('health', isNative() ? 'Apple Health is not available on this device.' : 'Apple Health works in the iPhone app.'); return; }
@@ -96,6 +99,7 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
   };
 
   const toggleWidget = async (on: boolean) => {
+    if (on && !settings.proUnlocked) { onRequirePro('The Home Screen Widget is a Fuel Tracker Pro feature.'); return; }
     setIntegration({ widget: on });
     if (!on) await clearWidget();
     note('widget', on ? 'On. Add the Fuel Tracker widget from your home screen: long-press, tap +, search Fuel Tracker.' : 'Off. The widget will show nothing logged.');
@@ -264,7 +268,7 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
         <div className="int-row">
           <label className="setting-row">
             <span><strong>Barcode scanner</strong><br /><span className="muted">Scan a label to fill in net carbs</span></span>
-            <input type="checkbox" className="toggle" checked={settings.integrations.barcode} onChange={e => { setIntegration({ barcode: e.target.checked }); note('barcode', e.target.checked ? 'On. A Scan button appears on the Carbs tab when adding food. Uses the free Open Food Facts database.' : 'Off.'); }} />
+            <input type="checkbox" className="toggle" checked={settings.integrations.barcode} onChange={e => { if (e.target.checked && !settings.proUnlocked) { onRequirePro('The Barcode Net-Carb Scanner is a Fuel Tracker Pro feature.'); return; } setIntegration({ barcode: e.target.checked }); note('barcode', e.target.checked ? 'On. A Scan button appears on the Carbs tab when adding food. Uses the free Open Food Facts database.' : 'Off.'); }} />
           </label>
           {intMsg.barcode && <p className="int-note">{intMsg.barcode}</p>}
         </div>
@@ -314,7 +318,7 @@ export function SettingsScreen({ settings, onChange, onDataChanged }: {
         <p className="field-help">
           Fuel Tracker is a journal for the Medi-Weightloss style of eating: lean protein by the ounce, counted carbs, healthy fats. It is for informational purposes only and is not medical or nutritional advice. Follow the guidance of your physician or clinic.
         </p>
-        <p className="version">Version 1.1</p>
+        <p className="version">Version 1.2</p>
       </Card>
     </div>
   );

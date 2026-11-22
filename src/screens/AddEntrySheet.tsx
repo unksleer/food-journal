@@ -26,17 +26,23 @@ interface FormProps {
   request: AddEntryRequest;
   foodIndex: FoodSuggestion[];
   barcodeEnabled: boolean;
+  proUnlocked: boolean;
+  onRequirePro: (reason: string) => void;
+  onEnableBarcode: () => void;
   onClose: () => void;
   onSave: (entry: Entry) => void;
   onSaveFavorite: (fav: Favorite) => void;
 }
 
-export function AddEntrySheet({ request, formKey, foodIndex, barcodeEnabled, onClose, onSave, onSaveFavorite }: {
+export function AddEntrySheet({ request, formKey, foodIndex, barcodeEnabled, proUnlocked, onRequirePro, onEnableBarcode, onClose, onSave, onSaveFavorite }: {
   request: AddEntryRequest | null;
   /** Changes on every open so the form starts fresh. */
   formKey: number;
   foodIndex: FoodSuggestion[];
   barcodeEnabled: boolean;
+  proUnlocked: boolean;
+  onRequirePro: (reason: string) => void;
+  onEnableBarcode: () => void;
   onClose: () => void;
   onSave: (entry: Entry) => void;
   onSaveFavorite: (fav: Favorite) => void;
@@ -44,12 +50,12 @@ export function AddEntrySheet({ request, formKey, foodIndex, barcodeEnabled, onC
   const mealLabel = request ? MEALS.find(m => m.key === (request.editing?.meal ?? request.meal))?.label.toLowerCase() : '';
   return (
     <Sheet open={!!request} onClose={onClose} title={request?.editing ? 'Edit entry' : `Add to ${mealLabel}`}>
-      {request && <EntryForm key={formKey} request={request} foodIndex={foodIndex} barcodeEnabled={barcodeEnabled} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
+      {request && <EntryForm key={formKey} request={request} foodIndex={foodIndex} barcodeEnabled={barcodeEnabled} proUnlocked={proUnlocked} onRequirePro={onRequirePro} onEnableBarcode={onEnableBarcode} onClose={onClose} onSave={onSave} onSaveFavorite={onSaveFavorite} />}
     </Sheet>
   );
 }
 
-function EntryForm({ request, foodIndex, barcodeEnabled, onClose, onSave, onSaveFavorite }: FormProps) {
+function EntryForm({ request, foodIndex, barcodeEnabled, proUnlocked, onRequirePro, onEnableBarcode, onClose, onSave, onSaveFavorite }: FormProps) {
   const src = request.editing ?? request.favorite;
   const initialKind: EntryKind = src?.kind ?? request.kind ?? 'protein';
   const [kind, setKind] = useState<EntryKind>(initialKind);
@@ -65,6 +71,13 @@ function EntryForm({ request, foodIndex, barcodeEnabled, onClose, onSave, onSave
   const [scanning, setScanning] = useState(false);
 
   const scan = async () => {
+    if (!proUnlocked) {
+      onRequirePro('The Barcode Net-Carb Scanner is a Fuel Tracker Pro feature.');
+      return;
+    }
+    if (!barcodeEnabled) {
+      onEnableBarcode();
+    }
     setScanMsg('');
     setScanning(true);
     try {
@@ -146,8 +159,8 @@ function EntryForm({ request, foodIndex, barcodeEnabled, onClose, onSave, onSave
       <div className="field">
         <label className="field-label" htmlFor="food-name">Food</label>
         <input id="food-name" className="input" placeholder={kind === 'protein' ? 'Grilled chicken' : kind === 'carb' ? 'Broccoli' : 'Olive oil'} value={name} onChange={e => { setName(e.target.value); setPicked(null); }} autoFocus={!request.editing} autoComplete="off" />
-        {kind === 'carb' && barcodeEnabled && isNative() && !request.editing && (
-          <button className="scan-btn" onClick={scan} disabled={scanning}><ScanBarcode size={18} /> {scanning ? 'Scanning…' : 'Scan barcode'}</button>
+        {kind === 'carb' && (barcodeEnabled || !proUnlocked) && isNative() && !request.editing && (
+          <button className="scan-btn" onClick={scan} disabled={scanning}><ScanBarcode size={18} /> {scanning ? 'Scanning…' : proUnlocked ? 'Scan barcode' : 'Scan barcode · Pro'}</button>
         )}
         {scanMsg && <p className="field-help">{scanMsg}</p>}
         {showSuggestions && (

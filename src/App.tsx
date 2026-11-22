@@ -10,6 +10,7 @@ import { Trends } from './screens/Trends';
 import { History } from './screens/History';
 import { SettingsScreen } from './screens/Settings';
 import { Onboarding } from './screens/Onboarding';
+import { ProSheet } from './screens/ProSheet';
 import { requestReview, syncReminders } from './lib/native';
 import { buildFoodIndex } from './lib/foods';
 import { applyRemoteChanges, fullSync, onRemoteChange, pushDay, pushSettings } from './lib/cloudSync';
@@ -33,6 +34,7 @@ export default function App() {
   const [addSeq, setAddSeq] = useState(0);
   const [printMonth, setPrintMonth] = useState<{ year: number; month: number } | null>(null);
   const [healthActivity, setHealthActivity] = useState<HealthActivity | null>(null);
+  const [proPromptReason, setProPromptReason] = useState<string | null>(null);
 
   // Load + one-time migration from v3.1 storage
   useEffect(() => {
@@ -200,7 +202,13 @@ export default function App() {
 
   const openDay = (date: string) => { setSelectedDate(date); setView('today'); window.scrollTo({ top: 0 }); };
 
-  const exportMonth = (year: number, month: number) => setPrintMonth({ year, month });
+  const exportMonth = (year: number, month: number) => {
+    if (!settings.proUnlocked) {
+      setProPromptReason('Monthly Clinic PDF Printout is a Fuel Tracker Pro feature.');
+      return;
+    }
+    setPrintMonth({ year, month });
+  };
   useEffect(() => {
     if (!printMonth) return;
     const t = setTimeout(async () => {
@@ -246,13 +254,36 @@ export default function App() {
         {view === 'trends' && <Trends days={days} settings={settings} />}
         {view === 'history' && <History days={days} settings={settings} onOpenDay={openDay} onExportMonth={exportMonth} />}
         {view === 'settings' && (
-          <SettingsScreen settings={settings} onChange={changeSettings} onDataChanged={() => { setSettings(loadSettings()); setDays(ensureToday(loadAllDays())); }} />
+          <SettingsScreen
+            settings={settings}
+            onChange={changeSettings}
+            onDataChanged={() => { setSettings(loadSettings()); setDays(ensureToday(loadAllDays())); }}
+            onRequirePro={reason => setProPromptReason(reason)}
+          />
         )}
       </main>
 
       <TabBar view={view} onChange={v => { setView(v); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
 
-      <AddEntrySheet request={addReq} formKey={addSeq} foodIndex={foodIndex} barcodeEnabled={settings.integrations.barcode} onClose={() => setAddReq(null)} onSave={saveEntry} onSaveFavorite={saveFavorite} />
+      <AddEntrySheet
+        request={addReq}
+        formKey={addSeq}
+        foodIndex={foodIndex}
+        barcodeEnabled={settings.integrations.barcode}
+        proUnlocked={!!settings.proUnlocked}
+        onRequirePro={reason => { setAddReq(null); setProPromptReason(reason); }}
+        onEnableBarcode={() => changeSettings({ ...settings, integrations: { ...settings.integrations, barcode: true } })}
+        onClose={() => setAddReq(null)}
+        onSave={saveEntry}
+        onSaveFavorite={saveFavorite}
+      />
+
+      <ProSheet
+        open={proPromptReason !== null}
+        reason={proPromptReason ?? undefined}
+        onClose={() => setProPromptReason(null)}
+        onUnlocked={() => changeSettings({ ...settings, proUnlocked: true })}
+      />
 
       {printMonth && <MonthPrint days={days} settings={settings} year={printMonth.year} month={printMonth.month} />}
     </div>

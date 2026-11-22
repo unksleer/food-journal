@@ -113,7 +113,7 @@ export function History({ days, settings, onOpenDay, onExportMonth }: {
       </Card>
 
       <button className="row-button" onClick={() => onExportMonth(ym.year, ym.month)}>
-        <Download size={20} /> <span>Export {formatMonth(ym.year, ym.month)} as PDF</span> <ChevronRight size={18} className="muted" />
+        <Download size={20} /> <span>Export {formatMonth(ym.year, ym.month)} as PDF{!settings.proUnlocked ? ' · Pro' : ''}</span> <ChevronRight size={18} className="muted" />
       </button>
     </div>
   );
